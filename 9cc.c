@@ -25,7 +25,7 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
             tokens[i].ty = *p;
             tokens[i].input = p;
             i++;
@@ -80,12 +80,35 @@ Node *new_node_num(int val) {
 // expr: mul
 // expr: mul "+" expr
 // expr: mul "-" expr
-// mul: number
-// mul: number "*" mul
-// mul: number "/" mul
+// mul: term
+// mul: term "*" mul
+// mul: term "/" mul
+// term: number
+// term: "(" expr ")"
+
+Node *expr();
+Node *mul();
+Node *term();
+void error(char *mes, char *token);
+
+Node *term() {
+    if (tokens[pos].ty == TK_NUM) {
+        return new_node_num(tokens[pos++].val);
+    }
+    if (tokens[pos].ty == '(') {
+        pos++;
+        Node *node = expr();
+        if (tokens[pos].ty != ')') {
+            error("no close paren match open paren: %s", tokens[pos].input);
+        }
+        pos++;
+        return node;
+    }
+    error("token is not number or open paren: %s", tokens[pos].input);
+}
 
 Node *mul() {
-    Node *lhs = new_node_num(tokens[pos++].val);
+    Node *lhs = term();
     if (tokens[pos].ty == '*') {
         pos++;
         return new_node('*', lhs, mul());
@@ -139,6 +162,8 @@ void gen(Node *node) {
             printf("    mul rdi\n");
             break;
         case '/':
+            // Clear rdx because of rdx:rax is dividend
+            printf("    mov rdx, 0\n");
             printf("    div rdi\n");
             break;
     }
