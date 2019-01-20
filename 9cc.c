@@ -75,64 +75,66 @@ Node *new_node_num(int val) {
     return node;
 }
 
-// Syntax BNF
-// ------------------
-// expr: mul
-// expr: mul "+" expr
-// expr: mul "-" expr
-// mul: term
-// mul: term "*" mul
-// mul: term "/" mul
-// term: number
-// term: "(" expr ")"
-
-Node *expr();
+Node *add();
 Node *mul();
 Node *term();
 void error(char *mes, char *token);
 
+int consume(int ty) {
+    if (tokens[pos].ty != ty) {
+        return 0;
+    }
+    pos++;
+    return 1;
+}
+
+// term: "(" add ")" | num
 Node *term() {
+    if (consume('(')) {
+        Node *node = add();
+        if (!consume(')')) {
+            error("no close paren matched open paren: %s", tokens[pos].input);
+        }
+        return node;
+    }
     if (tokens[pos].ty == TK_NUM) {
         return new_node_num(tokens[pos++].val);
-    }
-    if (tokens[pos].ty == '(') {
-        pos++;
-        Node *node = expr();
-        if (tokens[pos].ty != ')') {
-            error("no close paren match open paren: %s", tokens[pos].input);
-        }
-        pos++;
-        return node;
     }
     error("token is not number or open paren: %s", tokens[pos].input);
 }
 
+// mul: mul "*" term | mul "/" term | term
+//
+// mul: term mul'
+// mul': "*" term mul' | "/" term mul' | e
 Node *mul() {
-    Node *lhs = term();
-    if (tokens[pos].ty == '*') {
-        pos++;
-        return new_node('*', lhs, mul());
+    Node *node = term();
+    while (1) {
+        if (consume('*')) {
+            node = new_node('*', node, term());
+        } else if (consume('/')) {
+            node = new_node('/', node, term());
+        } else {
+            return node;
+        }
     }
-    if (tokens[pos].ty == '/') {
-        pos++;
-        return new_node('/', lhs, mul());
-    }
-
-    return lhs;
 }
 
-Node *expr() {
-    Node *lhs = mul();
-    if (tokens[pos].ty == '+') {
-        pos++;
-        return new_node('+', lhs, expr());
+// add: add "+" mul | add "-" mul | mul
+//
+// add: mul add'
+// add': "+" mul add' | "-" mul add' | e
+Node *add() {
+    Node *node = mul();
+    while (1) {
+        if (consume('+')) {
+            node = new_node('+', node, mul());
+        } else if (consume('-')) {
+            node = new_node('-', node, mul());
+        } else {
+            return node;
+        }
     }
-    if (tokens[pos].ty == '-') {
-        pos++;
-        return new_node('-', lhs, expr());
-    }
-
-    return lhs;
 }
 
 void error(char *mes, char *token) {
@@ -178,7 +180,7 @@ int main(int argc, char **argv) {
     }
 
     tokenize(argv[1]);
-    Node *node = expr();
+    Node *node = add();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
