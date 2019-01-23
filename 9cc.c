@@ -14,6 +14,28 @@ typedef struct {
     char *input;
 } Token;
 
+Token *new_token(char *p) {
+    Token *token = malloc(sizeof(Token));
+    token->ty = *p;
+    token->input = p;
+    return token;
+}
+
+Token *new_token_num(char *p, char **endptr) {
+    Token *token = malloc(sizeof(Token));
+    token->ty = TK_NUM;
+    token->input = p;
+    token->val = strtol(p, endptr, 10);
+    return token;
+}
+
+Token *new_token_eof(char *p) {
+    Token *token = malloc(sizeof(Token));
+    token->ty = TK_EOF;
+    token->input = p;
+    return token;
+}
+
 typedef struct {
     void **data;
     int capacity;
@@ -61,11 +83,11 @@ void runtest() {
 }
 
 
-Token tokens[100];
+Vector *tokens;
 int pos = 0;
 
 void tokenize(char *p) {
-    int i = 0;
+    tokens = new_vector();
     while (*p) {
         if (isspace(*p)) {
             p++;
@@ -73,18 +95,13 @@ void tokenize(char *p) {
         }
 
         if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
-            tokens[i].ty = *p;
-            tokens[i].input = p;
-            i++;
+            vec_push(tokens, new_token(p));
             p++;
             continue;
         }
 
         if (isdigit(*p)) {
-            tokens[i].ty = TK_NUM;
-            tokens[i].input = p;
-            tokens[i].val = strtol(p, &p, 10);
-            i++;
+            vec_push(tokens, new_token_num(p, &p));
             continue;
         }
 
@@ -92,8 +109,7 @@ void tokenize(char *p) {
         exit(1);
     }
 
-    tokens[i].ty = TK_EOF;
-    tokens[i].input = p;
+    vec_push(tokens, new_token_eof(p));
 }
 
 enum {
@@ -128,7 +144,8 @@ Node *term();
 void error(char *mes, char *token);
 
 int consume(int ty) {
-    if (tokens[pos].ty != ty) {
+    Token *t = tokens->data[pos];
+    if (t->ty != ty) {
         return 0;
     }
     pos++;
@@ -140,14 +157,18 @@ Node *term() {
     if (consume('(')) {
         Node *node = add();
         if (!consume(')')) {
-            error("no close paren matched open paren: %s", tokens[pos].input);
+            Token *t = tokens->data[pos];
+            error("no close paren matched open paren: %s", t->input);
         }
         return node;
     }
-    if (tokens[pos].ty == TK_NUM) {
-        return new_node_num(tokens[pos++].val);
+    Token *t = tokens->data[pos];
+    if (t->ty == TK_NUM) {
+        Node *node = new_node_num(t->val);
+        pos++;
+        return node;
     }
-    error("token is not number or open paren: %s", tokens[pos].input);
+    error("token is not number or open paren: %s", t->input);
 }
 
 // mul: mul "*" term | mul "/" term | term
