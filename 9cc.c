@@ -5,6 +5,7 @@
 
 enum {
     TK_NUM = 256,
+    TK_IDENT,
     TK_EOF,
 };
 
@@ -29,9 +30,9 @@ Token *new_token_num(char *p, char **endptr) {
     return token;
 }
 
-Token *new_token_eof(char *p) {
+Token *new_token_ty(char *p, int ty) {
     Token *token = malloc(sizeof(Token));
-    token->ty = TK_EOF;
+    token->ty = ty;
     token->input = p;
     return token;
 }
@@ -94,7 +95,13 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
+        if ('a' <= *p && *p <= 'z') {
+            vec_push(tokens, new_token_ty(p, TK_IDENT));
+            p++;
+            continue;
+        }
+
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';') {
             vec_push(tokens, new_token(p));
             p++;
             continue;
@@ -109,11 +116,12 @@ void tokenize(char *p) {
         exit(1);
     }
 
-    vec_push(tokens, new_token_eof(p));
+    vec_push(tokens, new_token_ty(p, TK_EOF));
 }
 
 enum {
     ND_NUM = 256,
+    ND_IDENT,
 };
 
 typedef struct Node {
@@ -121,6 +129,7 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;
+    char name;
 } Node;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
@@ -138,6 +147,11 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Node *code[100];
+
+void program();
+Node *stmt();
+Node *assign();
 Node *add();
 Node *mul();
 Node *term();
@@ -150,6 +164,34 @@ int consume(int ty) {
     }
     pos++;
     return 1;
+}
+
+// program: stmt program | e
+void program() {
+    int i = 0;
+    while (((Token *)tokens->data[pos])->ty != TK_EOF) {
+        code[i++] = stmt();
+    }
+    code[i] = NULL;
+}
+
+// stmt: assign ";"
+Node *stmt() {
+    Node *node = assign();
+    if (!consume(';')) {
+        Token *t = tokens->data[pos];
+        error("Token is not ';': %s", t->input);
+    }
+    return node;
+}
+
+// assign: add "=" assign | add
+Node *assign() {
+    Node * node = add();
+    if (consume('=')) {
+        node = new_node('=', node, assign());
+    }
+    return node;
 }
 
 // term: "(" add ")" | num
@@ -210,9 +252,28 @@ void error(char *mes, char *token) {
     exit(1);
 }
 
+void gen_lval(Node *node) {
+    if (node->ty != ND_IDENT) {
+        fprintf(stderr, "lvalue is not variable\n");
+        exit(1);
+    }
+    int offset = ('z' - node->name + 1) * 8;
+    printf("    mov rax, rbp\n");
+    printf("    sub rax, %d\n", offset);
+    printf("    push rax\n");
+}
+
 void gen(Node *node) {
     if (node->ty == ND_NUM) {
         printf("    push %d\n", node->val);
+        return;
+    }
+
+    if (node->ty == ND_IDENT) {
+        gen_lval(node);
+        printf("    pop rax\n");
+        printf("    mov rax, [rax]\n");
+        printf("    push rax\n");
         return;
     }
 
@@ -253,15 +314,25 @@ int main(int argc, char **argv) {
     }
 
     tokenize(argv[1]);
-    Node *node = add();
+    program();
 
     printf(".intel_syntax noprefix\n");
     printf(".global main\n");
     printf("main:\n");
 
-    gen(node);
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+    printf("    sub rsp, 208\n");
 
-    printf("    pop rax\n");
+
+    for (int i = 0; code[i]; i++) {
+        gen(code[i]);
+
+        printf("    pop rax\n");
+    }
+
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
     printf("    ret\n");
 
     return 0;
