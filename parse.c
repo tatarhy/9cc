@@ -44,7 +44,7 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';' || *p == '=') {
             vec_push(tokens, new_token(p));
             p++;
             continue;
@@ -67,6 +67,13 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
     node->ty = ty;
     node->lhs = lhs;
     node->rhs = rhs;
+    return node;
+}
+
+Node *new_node_ident(char *name) {
+    Node *node = malloc(sizeof(Node));
+    node->ty = ND_IDENT;
+    node->name = *name;
     return node;
 }
 
@@ -123,7 +130,7 @@ Node *assign() {
     return node;
 }
 
-// term: "(" add ")" | num
+// term: "(" add ")" | ident | num
 Node *term() {
     if (consume('(')) {
         Node *node = add();
@@ -133,7 +140,14 @@ Node *term() {
         }
         return node;
     }
+
     Token *t = tokens->data[pos];
+    if (t->ty == TK_IDENT) {
+        Node *node = new_node_ident(t->input);
+        pos++;
+        return node;
+    }
+
     if (t->ty == TK_NUM) {
         Node *node = new_node_num(t->val);
         pos++;

@@ -29,6 +29,17 @@ void gen(Node *node) {
         return;
     }
 
+    if (node->ty == '=') {
+        gen_lval(node->lhs);
+        gen(node->rhs);
+
+        printf("    pop rdi\n");
+        printf("    pop rax\n");
+        printf("    mov [rax], rdi\n");
+        printf("    push rdi\n");
+        return;
+    }
+
     gen(node->lhs);
     gen(node->rhs);
 
