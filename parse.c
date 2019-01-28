@@ -19,6 +19,16 @@ Token *new_token_num(char *p, char **endptr) {
     return token;
 }
 
+Token *new_token_ident(char *p, int len) {
+    char *name = malloc(sizeof(char) * (len + 1));
+    strncpy(name, p, len);
+    name[len] = '\0';
+    Token *token = malloc(sizeof(Token));
+    token->ty = TK_IDENT;
+    token->name = name;
+    return token;
+}
+
 Token *new_token_ty(char *p, int ty) {
     Token *token = malloc(sizeof(Token));
     token->ty = ty;
@@ -38,9 +48,12 @@ void tokenize(char *p) {
             continue;
         }
 
-        if ('a' <= *p && *p <= 'z') {
-            vec_push(tokens, new_token_ty(p, TK_IDENT));
-            p++;
+        if (isalpha(*p)) {
+            char *bp = p;
+            while (isalpha(*p)) {
+                p++;
+            }
+            vec_push(tokens, new_token_ident(bp, p - bp));
             continue;
         }
 
@@ -73,7 +86,7 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
 Node *new_node_ident(char *name) {
     Node *node = malloc(sizeof(Node));
     node->ty = ND_IDENT;
-    node->name = *name;
+    node->name = name;
     return node;
 }
 
@@ -84,6 +97,8 @@ Node *new_node_num(int val) {
     return node;
 }
 
+Map *vars;
+int var_len = 0;
 Node *code[100];
 
 Node *stmt();
@@ -104,6 +119,7 @@ int consume(int ty) {
 
 // program: stmt program | e
 void program() {
+    vars = new_map();
     int i = 0;
     while (((Token *)tokens->data[pos])->ty != TK_EOF) {
         code[i++] = stmt();
@@ -143,7 +159,11 @@ Node *term() {
 
     Token *t = tokens->data[pos];
     if (t->ty == TK_IDENT) {
-        Node *node = new_node_ident(t->input);
+        Node *node = new_node_ident(t->name);
+        int *offset = malloc(sizeof(int));
+        *offset = var_len;
+        map_put(vars, t->name, offset);
+        var_len++;
         pos++;
         return node;
     }

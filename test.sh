@@ -28,6 +28,6 @@ try 4 '(3+5)/2;'
 try 3 'a=3;'
 try 3 'a=3;a;'
 try 1 'a=b=1;b;'
-try 16 'a=11;b=a+5;'
+try 16 'a=11;aa=a+5;'
 
 echo OK

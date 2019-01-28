@@ -7,6 +7,7 @@ enum {
 typedef struct {
     int ty;
     int val;
+    char *name;
     char *input;
 } Token;
 
@@ -20,7 +21,7 @@ typedef struct Node {
     struct Node *lhs;
     struct Node *rhs;
     int val;
-    char name;
+    char *name;
 } Node;
 
 typedef struct {
@@ -44,6 +45,8 @@ void *map_get(Map *map, char *key);
 void runtest();
 
 extern Node *code[100];
+extern Map *vars;
+extern int var_len;
 
 void tokenize(char *p);
 void program();
