@@ -1,6 +1,8 @@
 enum {
     TK_NUM = 256,
     TK_IDENT,
+    TK_EQ, // ==
+    TK_NE, // !=
     TK_EOF,
 };
 
@@ -14,6 +16,8 @@ typedef struct {
 enum {
     ND_NUM = 256,
     ND_IDENT,
+    ND_EQ,
+    ND_NE,
 };
 
 typedef struct Node {

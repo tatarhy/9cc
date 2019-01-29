@@ -57,9 +57,31 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';' || *p == '=') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';') {
             vec_push(tokens, new_token(p));
             p++;
+            continue;
+        }
+
+        if (*p == '=') {
+            p++;
+            if (*p == '=') {
+                vec_push(tokens, new_token_ty(p, TK_EQ));
+                p++;
+                continue;
+            }
+            vec_push(tokens, new_token(p-1));
+            continue;
+        }
+
+        if (*p == '!') {
+            p++;
+            if (*p == '=') {
+                vec_push(tokens, new_token_ty(p, TK_NE));
+                p++;
+                continue;
+            }
+            vec_push(tokens, new_token(p-1));
             continue;
         }
 
@@ -103,6 +125,7 @@ Node *code[100];
 
 Node *stmt();
 Node *assign();
+Node *equality();
 Node *add();
 Node *mul();
 Node *term();
@@ -137,13 +160,30 @@ Node *stmt() {
     return node;
 }
 
-// assign: add "=" assign | add
+// assign: equality "=" assign | equality
 Node *assign() {
-    Node * node = add();
+    Node * node = equality();
     if (consume('=')) {
         node = new_node('=', node, assign());
     }
     return node;
+}
+
+// equality: equality "==" add | equality "!=" add | add
+//
+// equality: add equality'
+// equality': "==" add equality' | "!=" add equality | e
+Node *equality() {
+    Node *node = add();
+    while (1) {
+        if (consume(TK_EQ)) {
+            node = new_node(ND_EQ, node, add());
+        } else if (consume(TK_NE)) {
+            node = new_node(ND_NE, node, add());
+        } else {
+            return node;
+        }
+    }
 }
 
 // term: "(" add ")" | ident | num
