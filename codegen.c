@@ -30,6 +30,12 @@ void gen(Node *node) {
         return;
     }
 
+    if (node->ty == ND_CALL) {
+        printf("    call %s\n", node->name);
+        printf("    push rax\n");
+        return;
+    }
+
     if (node->ty == '=') {
         gen_lval(node->lhs);
         gen(node->rhs);

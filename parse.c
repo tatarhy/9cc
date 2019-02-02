@@ -199,12 +199,22 @@ Node *term() {
 
     Token *t = tokens->data[pos];
     if (t->ty == TK_IDENT) {
+        pos++;
+        if (consume('(')) {
+            Node *node = malloc(sizeof(Node));
+            node->ty = ND_CALL;
+            node->name = t->name;
+            if (!consume(')')) {
+                Token *t = tokens->data[pos];
+                error("no close paren matched open paren: %s", t->input);
+            }
+            return node;
+        }
         Node *node = new_node_ident(t->name);
         int *offset = malloc(sizeof(int));
         *offset = var_len;
         map_put(vars, t->name, offset);
         var_len++;
-        pos++;
         return node;
     }
 

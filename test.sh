@@ -5,7 +5,9 @@ try() {
     input="$2"
 
     ./9cc "$input" > tmp.s
-    gcc -o tmp tmp.s
+    gcc -c -p foo.o foo.c
+    gcc -c -o tmp.o tmp.s
+    gcc -o tmp foo.o tmp.o
     ./tmp
     actual="$?"
 
@@ -33,5 +35,7 @@ try 1 '1==1;'
 try 1 '3!=2;'
 try 0 '3==2;'
 try 1 '5*(9-6)==5+2*5;'
+try 42 'foo();'
+try 42 'bar=foo();bar;'
 
 echo OK

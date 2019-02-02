@@ -18,6 +18,7 @@ enum {
     ND_IDENT,
     ND_EQ,
     ND_NE,
+    ND_CALL,
 };
 
 typedef struct Node {
