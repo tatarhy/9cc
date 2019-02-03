@@ -4,6 +4,8 @@
 #include <string.h>
 #include "9cc.h"
 
+char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+
 void gen_lval(Node *node) {
     if (node->ty != ND_IDENT) {
         fprintf(stderr, "lvalue is not variable\n");
@@ -31,6 +33,12 @@ void gen(Node *node) {
     }
 
     if (node->ty == ND_CALL) {
+        for (int i = 0; i < node->args->len; i++) {
+            gen(node->args->data[i]);
+        }
+        for (int i = node->args->len - 1; i >= 0; i--) {
+            printf("    pop %s\n", regs[i]);
+        }
         printf("    call %s\n", node->name);
         printf("    push rax\n");
         return;

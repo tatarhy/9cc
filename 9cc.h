@@ -21,14 +21,6 @@ enum {
     ND_CALL,
 };
 
-typedef struct Node {
-    int ty;
-    struct Node *lhs;
-    struct Node *rhs;
-    int val;
-    char *name;
-} Node;
-
 typedef struct {
     void **data;
     int capacity;
@@ -39,6 +31,15 @@ typedef struct {
     Vector *keys;
     Vector *vals;
 } Map;
+
+typedef struct Node {
+    int ty;
+    struct Node *lhs;
+    struct Node *rhs;
+    int val;
+    char *name;
+    Vector *args;
+} Node;
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);

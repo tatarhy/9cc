@@ -35,7 +35,7 @@ try 1 '1==1;'
 try 1 '3!=2;'
 try 0 '3==2;'
 try 1 '5*(9-6)==5+2*5;'
-try 42 'foo();'
-try 42 'bar=foo();bar;'
+try 3 'foo(5, 2);'
+try 4 'a=3;b=1;bar=foo(6,foo(a,b));bar;'
 
 echo OK

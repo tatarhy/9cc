@@ -57,7 +57,7 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';') {
+        if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')' || *p == ';' || *p == ',') {
             vec_push(tokens, new_token(p));
             p++;
             continue;
@@ -186,6 +186,27 @@ Node *equality() {
     }
 }
 
+Node *function_call(Token *t) {
+    Node *node = malloc(sizeof(Node));
+    node->ty = ND_CALL;
+    node->name = t->name;
+    node->args = new_vector();
+    if (consume(')')) {
+        return node;
+    }
+    while (1) {
+        vec_push(node->args, assign());
+        if (!consume(',')) {
+            break;
+        }
+    }
+    if (!consume(')')) {
+        Token *t = tokens->data[pos];
+        error("no close paren matched open paren: %s", t->input);
+    }
+    return node;
+}
+
 // term: "(" add ")" | ident | num
 Node *term() {
     if (consume('(')) {
@@ -201,14 +222,7 @@ Node *term() {
     if (t->ty == TK_IDENT) {
         pos++;
         if (consume('(')) {
-            Node *node = malloc(sizeof(Node));
-            node->ty = ND_CALL;
-            node->name = t->name;
-            if (!consume(')')) {
-                Token *t = tokens->data[pos];
-                error("no close paren matched open paren: %s", t->input);
-            }
-            return node;
+            return function_call(t);
         }
         Node *node = new_node_ident(t->name);
         int *offset = malloc(sizeof(int));
