@@ -54,7 +54,13 @@ void program() {
     vars = new_map();
     int i = 0;
     while (((Token *)tokens->data[pos])->ty != TK_EOF) {
-        code[i++] = stmt();
+        consume(TK_IDENT);
+        consume('(');
+        consume(')');
+        consume('{');
+        while (!consume('}')) {
+            code[i++] = stmt();
+        }
     }
     code[i] = NULL;
 }
