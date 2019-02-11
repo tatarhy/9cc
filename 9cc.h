@@ -51,7 +51,7 @@ void *map_get(Map *map, char *key);
 void runtest();
 
 extern Vector *tokens;
-extern Node *code[100];
+extern Vector *code;
 extern Map *vars;
 extern int var_len;
 

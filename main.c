@@ -28,8 +28,8 @@ int main(int argc, char **argv) {
     printf("    sub rsp, %d\n", var_len * 8);
 
 
-    for (int i = 0; code[i]; i++) {
-        gen(code[i]);
+    for (int i = 0; i < code->len; i++) {
+        gen(code->data[i]);
 
         printf("    pop rax\n");
     }

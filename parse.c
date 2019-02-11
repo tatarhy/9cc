@@ -30,7 +30,7 @@ Node *new_node_num(int val) {
 
 Map *vars;
 int var_len = 0;
-Node *code[100];
+Vector *code;
 
 Node *stmt();
 Node *assign();
@@ -52,17 +52,16 @@ int consume(int ty) {
 // program: stmt program | e
 void program() {
     vars = new_map();
-    int i = 0;
+    code = new_vector();
     while (((Token *)tokens->data[pos])->ty != TK_EOF) {
         consume(TK_IDENT);
         consume('(');
         consume(')');
         consume('{');
         while (!consume('}')) {
-            code[i++] = stmt();
+            vec_push(code, stmt());
         }
     }
-    code[i] = NULL;
 }
 
 // stmt: assign ";"
