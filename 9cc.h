@@ -41,6 +41,13 @@ typedef struct Node {
     Vector *args;
 } Node;
 
+typedef struct {
+    char *name;
+    Map *lval;
+    int lval_len;
+    Vector *code;
+} Function;
+
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);
 
@@ -52,9 +59,8 @@ void runtest();
 
 extern Vector *tokens;
 extern Vector *code;
-extern Map *vars;
-extern int var_len;
+extern Vector *funcs;
 
 void tokenize(char *p);
 void program();
-void gen(Node *node);
+void gen_amd64();

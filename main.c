@@ -18,25 +18,7 @@ int main(int argc, char **argv) {
 
     tokenize(argv[1]);
     program();
-
-    printf(".intel_syntax noprefix\n");
-    printf(".global main\n");
-    printf("main:\n");
-
-    printf("    push rbp\n");
-    printf("    mov rbp, rsp\n");
-    printf("    sub rsp, %d\n", var_len * 8);
-
-
-    for (int i = 0; i < code->len; i++) {
-        gen(code->data[i]);
-
-        printf("    pop rax\n");
-    }
-
-    printf("    mov rsp, rbp\n");
-    printf("    pop rbp\n");
-    printf("    ret\n");
+    gen_amd64();
 
     return 0;
 }

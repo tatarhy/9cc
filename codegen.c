@@ -11,7 +11,8 @@ void gen_lval(Node *node) {
         fprintf(stderr, "lvalue is not variable\n");
         exit(1);
     }
-    int *idx = map_get(vars, node->name);
+    Function *f = funcs->data[funcs->len - 1];
+    int *idx = map_get(f->lval, node->name);
     int offset = *idx * 8;
     printf("    mov rax, rbp\n");
     printf("    sub rax, %d\n", offset);
@@ -88,5 +89,34 @@ void gen(Node *node) {
     }
 
     printf("    push rax\n");
+}
+
+void gen_func(Function *f) {
+    printf("%s:\n", f->name);
+
+    // prologue
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+    printf("    sub rsp, %d\n", f->lval_len * 8);
+
+    for (int i = 0; i < f->code->len; i++) {
+        gen(f->code->data[i]);
+
+        printf("    pop rax\n");
+    }
+
+    // epilogue
+    printf("    mov rsp, rbp\n");
+    printf("    pop rbp\n");
+    printf("    ret\n");
+}
+
+void gen_amd64() {
+    printf(".intel_syntax noprefix\n");
+    printf(".global main\n");
+
+    for (int i = 0; i < funcs->len; i++) {
+        gen_func(funcs->data[i]);
+    }
 }
 

@@ -28,9 +28,14 @@ Node *new_node_num(int val) {
     return node;
 }
 
-Map *vars;
-int var_len = 0;
-Vector *code;
+Function *new_func(char *name) {
+    Function *func = malloc(sizeof(Function));
+    func->name = name;
+    func->lval = new_map();
+    func->lval_len = 0;
+    func->code = new_vector();
+    return func;
+}
 
 Node *stmt();
 Node *assign();
@@ -49,17 +54,20 @@ int consume(int ty) {
     return 1;
 }
 
+Vector *funcs;
 // program: stmt program | e
 void program() {
-    vars = new_map();
-    code = new_vector();
+    funcs = new_vector();
     while (((Token *)tokens->data[pos])->ty != TK_EOF) {
-        consume(TK_IDENT);
+        Token *token = tokens->data[pos];
+        Function *f = new_func(token->name);
+        vec_push(funcs, f);
+        pos++;
         consume('(');
         consume(')');
         consume('{');
         while (!consume('}')) {
-            vec_push(code, stmt());
+            vec_push(f->code, stmt());
         }
     }
 }
@@ -139,10 +147,11 @@ Node *term() {
             return function_call(t);
         }
         Node *node = new_node_ident(t->name);
+        Function *f = funcs->data[funcs->len - 1];
         int *offset = malloc(sizeof(int));
-        *offset = var_len;
-        map_put(vars, t->name, offset);
-        var_len++;
+        *offset = f->lval_len;
+        map_put(f->lval, t->name, offset);
+        f->lval_len++;
         return node;
     }
 
