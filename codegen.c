@@ -5,14 +5,14 @@
 #include "9cc.h"
 
 char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
+Function *f_now;
 
 void gen_lval(Node *node) {
     if (node->ty != ND_IDENT) {
         fprintf(stderr, "lvalue is not variable\n");
         exit(1);
     }
-    Function *f = funcs->data[funcs->len - 1];
-    int *idx = map_get(f->lval, node->name);
+    int *idx = map_get(f_now->lval, node->name);
     int offset = *idx * 8;
     printf("    mov rax, rbp\n");
     printf("    sub rax, %d\n", offset);
@@ -92,12 +92,17 @@ void gen(Node *node) {
 }
 
 void gen_func(Function *f) {
+    f_now = f;
     printf("%s:\n", f->name);
 
     // prologue
     printf("    push rbp\n");
     printf("    mov rbp, rsp\n");
     printf("    sub rsp, %d\n", f->lval_len * 8);
+
+    for (int i = 0; i < f->arg_len; i++) {
+        printf("    mov QWORD PTR [rbp-%d], %s\n", (i+1)*8, regs[i]);
+    }
 
     for (int i = 0; i < f->code->len; i++) {
         gen(f->code->data[i]);

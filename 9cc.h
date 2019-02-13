@@ -45,6 +45,7 @@ typedef struct {
     char *name;
     Map *lval;
     int lval_len;
+    int arg_len;
     Vector *code;
 } Function;
 

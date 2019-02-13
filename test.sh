@@ -39,5 +39,6 @@ try   3 'main(){foo(5, 2);}'
 try   4 'main(){a=3;b=1;bar=foo(6,foo(a,b));bar;}'
 try  42 'bar(){42;}main(){bar();}'
 try  13 'bar(){5+4;}main(){bar()+4;}'
+try  12 'bar(a,b){a+b;}main(){bar(5,4)+3;}'
 
 echo OK

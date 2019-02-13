@@ -33,6 +33,7 @@ Function *new_func(char *name) {
     func->name = name;
     func->lval = new_map();
     func->lval_len = 0;
+    func->arg_len = 0;
     func->code = new_vector();
     return func;
 }
@@ -59,12 +60,31 @@ Vector *funcs;
 void program() {
     funcs = new_vector();
     while (((Token *)tokens->data[pos])->ty != TK_EOF) {
-        Token *token = tokens->data[pos];
-        Function *f = new_func(token->name);
+        Token *t = tokens->data[pos];
+        Function *f = new_func(t->name);
         vec_push(funcs, f);
         pos++;
         consume('(');
-        consume(')');
+        if (!consume(')')) {
+            while (1) {
+                t = tokens->data[pos];
+                if (map_get(f->lval, t->name) == NULL) {
+                    int *offset = malloc(sizeof(int));
+                    *offset = f->lval_len + 1;
+                    map_put(f->lval, t->name, offset);
+                    f->lval_len++;
+                    f->arg_len++;
+                }
+                pos++;
+                if (!consume(',')) {
+                    break;
+                }
+            }
+            if (!consume(')')) {
+                t = tokens->data[pos];
+                error("no close paren matched open paren: %s", t->input);
+            }
+        }
         consume('{');
         while (!consume('}')) {
             vec_push(f->code, stmt());
@@ -148,10 +168,12 @@ Node *term() {
         }
         Node *node = new_node_ident(t->name);
         Function *f = funcs->data[funcs->len - 1];
-        int *offset = malloc(sizeof(int));
-        *offset = f->lval_len;
-        map_put(f->lval, t->name, offset);
-        f->lval_len++;
+        if (map_get(f->lval, t->name) == NULL) {
+            int *offset = malloc(sizeof(int));
+            *offset = f->lval_len + 1;
+            map_put(f->lval, t->name, offset);
+            f->lval_len++;
+        }
         return node;
     }
 
