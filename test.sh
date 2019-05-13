@@ -40,6 +40,8 @@ try   4 'main(){a=3;b=1;bar=foo(6,foo(a,b));bar;}'
 try  42 'bar(){42;}main(){bar();}'
 try  13 'bar(){5+4;}main(){bar()+4;}'
 try  12 'bar(a,b){a+b;}main(){bar(5,4)+3;}'
+try  70 'main(){a=13;b=57;return a+b;b;}'
+try  13 'main(){returnn=13;}'
 try 108 'main(){a=13;b=57;if(a==13)b=108;b;}'
 try  57 'main(){a=13;b=57;if(a==7)b=108;b;}'
 

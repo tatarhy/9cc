@@ -99,12 +99,16 @@ Node *expression();
  * statement:
  *     selection-statement
  *     expression-statement
+ *     jump-statement
  *
  * selection-statement:
  *     "if" "(" expression ")" statement
  *
  * expression-statement:
  *     expression ";"
+ *
+ * jump-statement:
+ *     "return" expression_opt ";"
  */
 Node *stmt() {
     if (consume(TK_IF)) {
@@ -116,6 +120,16 @@ Node *stmt() {
             error("Token is not ')': %s", "");
         }
         return new_node(ND_IF, exp, stmt());
+    }
+    if (consume(TK_RET)) {
+        Node *node = malloc(sizeof(Node));
+        node->ty = ND_RET;
+        node->lhs = expression();
+        if (!consume(';')) {
+            Token *t = tokens->data[pos];
+            error("Token is not ';': %s", t->input);
+        }
+        return node;
     } else {
         Node *node = expression();
         if (!consume(';')) {

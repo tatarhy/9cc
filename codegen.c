@@ -49,6 +49,15 @@ void gen(Node *node) {
         return;
     }
 
+    if (node->ty == ND_RET) {
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    mov rsp, rbp\n");
+        printf("    pop rbp\n");
+        printf("    ret\n");
+        return;
+    }
+
     if (node->ty == ND_IF) {
         // evaluate conditional expression
         gen(node->lhs);

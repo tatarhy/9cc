@@ -46,6 +46,12 @@ void tokenize(char *p) {
             continue;
         }
 
+        if (strncmp(p, "return", 6) == 0 && !isalnum(p[6]) && p[6] != '_') {
+            vec_push(tokens, new_token_ty(p, TK_RET));
+            p += 6;
+            continue;
+        }
+
         if (isalpha(*p)) {
             char *bp = p;
             while (isalpha(*p)) {
