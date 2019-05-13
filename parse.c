@@ -92,14 +92,59 @@ void program() {
     }
 }
 
-// stmt: assign ";"
+
+Node *expression();
+
+/*
+ * statement:
+ *     selection-statement
+ *     expression-statement
+ *
+ * selection-statement:
+ *     "if" "(" expression ")" statement
+ *
+ * expression-statement:
+ *     expression ";"
+ */
 Node *stmt() {
-    Node *node = assign();
-    if (!consume(';')) {
-        Token *t = tokens->data[pos];
-        error("Token is not ';': %s", t->input);
+    if (consume(TK_IF)) {
+        if (!consume('(')) {
+            error("Token is not '(': %s", "");
+        }
+        Node *exp = expression();
+        if (!consume(')')) {
+            error("Token is not ')': %s", "");
+        }
+        return new_node(ND_IF, exp, stmt());
+    } else {
+        Node *node = expression();
+        if (!consume(';')) {
+            Token *t = tokens->data[pos];
+            error("Token is not ';': %s", t->input);
+        }
+        return node;
     }
-    return node;
+}
+
+/*
+ * expression:
+ *     expression "," assign | assign
+ *
+ * expression:
+ *     assign expression'
+ *
+ * expression':
+ *     "," expression'
+ */
+Node *expression() {
+    Node *node = assign();
+    while (1) {
+        if (consume(',')) {
+            node = new_node(',', node, expression());
+        } else {
+            return node;
+        }
+    }
 }
 
 // assign: equality "=" assign | equality

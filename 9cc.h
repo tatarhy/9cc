@@ -3,6 +3,7 @@ enum {
     TK_IDENT,
     TK_EQ, // ==
     TK_NE, // !=
+    TK_IF, // if
     TK_EOF,
 };
 
@@ -18,6 +19,7 @@ enum {
     ND_IDENT,
     ND_EQ,
     ND_NE,
+    ND_IF,
     ND_CALL,
 };
 

@@ -7,11 +7,15 @@
 char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 Function *f_now;
 
+/**
+ * Generate lvalue code
+ */
 void gen_lval(Node *node) {
     if (node->ty != ND_IDENT) {
         fprintf(stderr, "lvalue is not variable\n");
         exit(1);
     }
+    // resolve variable address and push result to stack top
     int *idx = map_get(f_now->lval, node->name);
     int offset = *idx * 8;
     printf("    mov rax, rbp\n");
@@ -42,6 +46,27 @@ void gen(Node *node) {
         }
         printf("    call %s\n", node->name);
         printf("    push rax\n");
+        return;
+    }
+
+    if (node->ty == ND_IF) {
+        // evaluate conditional expression
+        gen(node->lhs);
+        printf("    pop rax\n");
+        printf("    cmp rax, 0\n");
+
+        // FIXME?
+        // push expression result to stack
+        // because all statement pop top of stack at end
+        printf("    push rax\n");
+
+        // jump to end of if statement if condition is falth
+        printf("    je .Lend1\n");
+
+        // pop top of stack pushed previous
+        printf("    pop rax\n");
+        gen(node->rhs);
+        printf(".Lend1:\n");
         return;
     }
 

@@ -51,7 +51,11 @@ void tokenize(char *p) {
             while (isalpha(*p)) {
                 p++;
             }
-            vec_push(tokens, new_token_ident(bp, p - bp));
+            if (strncmp(bp, "if", p - bp) == 0) {
+                vec_push(tokens, new_token_ty(bp, TK_IF));
+            } else {
+                vec_push(tokens, new_token_ident(bp, p - bp));
+            }
             continue;
         }
 
