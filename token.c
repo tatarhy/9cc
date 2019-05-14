@@ -38,6 +38,11 @@ Token *new_token_ty(char *p, int ty) {
     return token;
 }
 
+int iskeyword(char *p, char *keyword) {
+    int n = strlen(keyword);
+    return strncmp(p, keyword, n) == 0 &&!isalnum(p[n]) && p[n] != '_';
+}
+
 void tokenize(char *p) {
     tokens = new_vector();
     while (*p) {
@@ -46,9 +51,15 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (strncmp(p, "return", 6) == 0 && !isalnum(p[6]) && p[6] != '_') {
+        if (iskeyword(p, "return")) {
             vec_push(tokens, new_token_ty(p, TK_RET));
             p += 6;
+            continue;
+        }
+
+        if (iskeyword(p, "if")) {
+            vec_push(tokens, new_token_ty(p, TK_IF));
+            p += 2;
             continue;
         }
 
@@ -57,11 +68,7 @@ void tokenize(char *p) {
             while (isalpha(*p)) {
                 p++;
             }
-            if (strncmp(bp, "if", p - bp) == 0) {
-                vec_push(tokens, new_token_ty(bp, TK_IF));
-            } else {
-                vec_push(tokens, new_token_ident(bp, p - bp));
-            }
+            vec_push(tokens, new_token_ident(bp, p - bp));
             continue;
         }
 
