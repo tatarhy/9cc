@@ -6,6 +6,7 @@
 
 char *regs[] = { "rdi", "rsi", "rdx", "rcx", "r8", "r9" };
 Function *f_now;
+int lcnt = 1;
 
 /**
  * Generate lvalue code
@@ -70,12 +71,13 @@ void gen(Node *node) {
         printf("    push rax\n");
 
         // jump to end of if statement if condition is falth
-        printf("    je .Lend1\n");
+        printf("    je .Lend%d\n", lcnt);
 
         // pop top of stack pushed previous
         printf("    pop rax\n");
         gen(node->rhs);
-        printf(".Lend1:\n");
+        printf(".Lend%d:\n", lcnt);
+        lcnt++;
         return;
     }
 
