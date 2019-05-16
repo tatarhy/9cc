@@ -22,6 +22,7 @@ enum {
     ND_NE,
     ND_IF,
     ND_RET,
+    ND_BLOCK,
     ND_CALL,
 };
 
@@ -43,6 +44,7 @@ typedef struct Node {
     int val;
     char *name;
     Vector *args;
+    Vector *stmts;
 } Node;
 
 typedef struct {

@@ -81,6 +81,14 @@ void gen(Node *node) {
         return;
     }
 
+    if (node->ty == ND_BLOCK) {
+        Vector *stmts = node->stmts;
+        for (int i = 0; i < stmts->len; i++) {
+            gen(stmts->data[i]);
+        }
+        return;
+    }
+
     if (node->ty == '=') {
         gen_lval(node->lhs);
         gen(node->rhs);

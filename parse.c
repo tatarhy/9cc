@@ -98,6 +98,7 @@ Node *expression();
 /*
  * statement:
  *     selection-statement
+ *     compound-statement
  *     expression-statement
  *     jump-statement
  *
@@ -121,6 +122,30 @@ Node *stmt() {
         }
         return new_node(ND_IF, exp, stmt());
     }
+
+    /*
+     * compound-statement:
+     *     "{" block-item-list_opt "}"
+     *
+     * block-item-list:
+     *     block-item
+     *     block-item-list
+     *
+     * block-item:
+     *     declaration // TODO
+     *     statement
+     */
+    if (consume('{')) {
+        Vector *stmts = new_vector();
+        while (!consume('}')) {
+            vec_push(stmts, stmt());
+        }
+        Node *node = malloc(sizeof(Node));
+        node->ty = ND_BLOCK;
+        node->stmts = stmts;
+        return node;
+    }
+
     if (consume(TK_RET)) {
         Node *node = malloc(sizeof(Node));
         node->ty = ND_RET;

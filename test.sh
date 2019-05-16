@@ -46,5 +46,7 @@ try  13 'main(){iff=13;}'
 try 108 'main(){a=13;b=57;if(a==13)b=108;b;}'
 try  57 'main(){a=13;b=57;if(a==7)b=108;b;}'
 try 108 'main(){a=13;b=57;if(a==13)if(b==57)b=108;b;}'
+try  70 'main(){a=13;b=57;if(a==12){a=54;b=108;}return a+b;}'
+try 162 'main(){a=13;b=57;if(a==13){a=54;b=108;}return a+b;}'
 
 echo OK
