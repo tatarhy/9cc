@@ -1,58 +1,58 @@
 enum {
-    TK_NUM = 256,
-    TK_IDENT,
-    TK_EQ,  // ==
-    TK_NE,  // !=
-    TK_IF,  // if
-    TK_RET, // return
-    TK_EOF,
+  TK_NUM = 256,
+  TK_IDENT,
+  TK_EQ,  // ==
+  TK_NE,  // !=
+  TK_IF,  // if
+  TK_RET, // return
+  TK_EOF,
 };
 
 typedef struct {
-    int ty;
-    int val;
-    char *name;
-    char *input;
+  int ty;
+  int val;
+  char *name;
+  char *input;
 } Token;
 
 enum {
-    ND_NUM = 256,
-    ND_IDENT,
-    ND_EQ,
-    ND_NE,
-    ND_IF,
-    ND_RET,
-    ND_BLOCK,
-    ND_CALL,
+  ND_NUM = 256,
+  ND_IDENT,
+  ND_EQ,
+  ND_NE,
+  ND_IF,
+  ND_RET,
+  ND_BLOCK,
+  ND_CALL,
 };
 
 typedef struct {
-    void **data;
-    int capacity;
-    int len;
+  void **data;
+  int capacity;
+  int len;
 } Vector;
 
 typedef struct {
-    Vector *keys;
-    Vector *vals;
+  Vector *keys;
+  Vector *vals;
 } Map;
 
 typedef struct Node {
-    int ty;
-    struct Node *lhs;
-    struct Node *rhs;
-    int val;
-    char *name;
-    Vector *args;
-    Vector *stmts;
+  int ty;
+  struct Node *lhs;
+  struct Node *rhs;
+  int val;
+  char *name;
+  Vector *args;
+  Vector *stmts;
 } Node;
 
 typedef struct {
-    char *name;
-    Map *lval;
-    int lval_len;
-    int arg_len;
-    Vector *code;
+  char *name;
+  Map *lval;
+  int lval_len;
+  int arg_len;
+  Vector *code;
 } Function;
 
 Vector *new_vector();
