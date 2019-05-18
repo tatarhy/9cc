@@ -63,9 +63,19 @@ void tokenize(char *p) {
             continue;
         }
 
-        if (isalpha(*p)) {
+        /*
+         * identifier:
+         *     identifier-nondigit
+         *     identifier identifier-nondigit
+         *     identifier digit
+         * identifier-nondigit:
+         *     nondigit
+         *     universal-character-name // TODO
+         *     other implementation-defined characters // TODO
+         */
+        if (isalpha(*p) || *p == '_') {
             char *bp = p;
-            while (isalpha(*p)) {
+            while (isalnum(*p) || *p == '_') {
                 p++;
             }
             vec_push(tokens, new_token_ident(bp, p - bp));
