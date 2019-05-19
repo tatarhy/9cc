@@ -64,10 +64,14 @@ void *map_get(Map *map, char *key);
 
 void runtest();
 
+void error(char *msg, ...);
+void error_at(char *msg, char *loc);
+
+extern char *user_input;
 extern Vector *tokens;
 extern Vector *code;
 extern Vector *funcs;
 
-void tokenize(char *p);
+void tokenize();
 void program();
 void gen_amd64();

@@ -1,8 +1,31 @@
 #include "9cc.h"
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+/**
+ * Report error
+ */
+void error(char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
+/**
+ * Report error with occured position
+ */
+void error_at(char *msg, char *loc) {
+  int pos = loc - user_input;
+  fprintf(stderr, "error: %s\n", msg);
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s^\n", pos, "");
+  exit(1);
+}
 
 Vector *new_vector() {
   Vector *vec = malloc(sizeof(Vector));

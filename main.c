@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+char *user_input;
+
 int main(int argc, char **argv) {
   if (argc != 2) {
     fprintf(stderr, "Invalid arguments\n");
@@ -15,7 +17,8 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  tokenize(argv[1]);
+  user_input = argv[1];
+  tokenize();
   program();
   gen_amd64();
 

@@ -43,7 +43,8 @@ int iskeyword(char *p, char *keyword) {
   return strncmp(p, keyword, n) == 0 && !isalnum(p[n]) && p[n] != '_';
 }
 
-void tokenize(char *p) {
+void tokenize() {
+  char *p = user_input;
   tokens = new_vector();
   while (*p) {
     if (isspace(*p)) {
@@ -116,8 +117,7 @@ void tokenize(char *p) {
       continue;
     }
 
-    fprintf(stderr, "Cannot tokenize: %s\n", p);
-    exit(1);
+    error_at("Cannot tokenize", p);
   }
 
   vec_push(tokens, new_token_ty(p, TK_EOF));

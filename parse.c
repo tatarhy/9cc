@@ -44,7 +44,6 @@ Node *equality();
 Node *add();
 Node *mul();
 Node *term();
-void error(char *mes, char *token);
 
 int consume(int ty) {
   Token *t = tokens->data[pos];
@@ -82,7 +81,7 @@ void program() {
       }
       if (!consume(')')) {
         t = tokens->data[pos];
-        error("no close paren matched open paren: %s", t->input);
+        error_at("expected ')'", t->input);
       }
     }
     consume('{');
@@ -113,11 +112,13 @@ Node *expression();
 Node *stmt() {
   if (consume(TK_IF)) {
     if (!consume('(')) {
-      error("Token is not '(': %s", "");
+      Token *t = tokens->data[pos];
+      error_at("expected '(' after 'if' token", t->input);
     }
     Node *exp = expression();
     if (!consume(')')) {
-      error("Token is not ')': %s", "");
+      Token *t = tokens->data[pos];
+      error_at("expected ')'", t->input);
     }
     return new_node(ND_IF, exp, stmt());
   }
@@ -151,14 +152,14 @@ Node *stmt() {
     node->lhs = expression();
     if (!consume(';')) {
       Token *t = tokens->data[pos];
-      error("Token is not ';': %s", t->input);
+      error_at("expected ';'", t->input);
     }
     return node;
   } else {
     Node *node = expression();
     if (!consume(';')) {
       Token *t = tokens->data[pos];
-      error("Token is not ';': %s", t->input);
+      error_at("expected ';'", t->input);
     }
     return node;
   }
@@ -227,7 +228,7 @@ Node *function_call(Token *t) {
   }
   if (!consume(')')) {
     Token *t = tokens->data[pos];
-    error("no close paren matched open paren: %s", t->input);
+    error_at("expected ')'", t->input);
   }
   return node;
 }
@@ -238,7 +239,7 @@ Node *term() {
     Node *node = add();
     if (!consume(')')) {
       Token *t = tokens->data[pos];
-      error("no close paren matched open paren: %s", t->input);
+      error_at("expected ')'", t->input);
     }
     return node;
   }
@@ -265,7 +266,7 @@ Node *term() {
     pos++;
     return node;
   }
-  error("token is not number or open paren: %s", t->input);
+  error_at("expected number or '('", t->input);
 }
 
 // mul: mul "*" term | mul "/" term | term
@@ -300,9 +301,4 @@ Node *add() {
       return node;
     }
   }
-}
-
-void error(char *mes, char *token) {
-  fprintf(stderr, mes, token);
-  exit(1);
 }
