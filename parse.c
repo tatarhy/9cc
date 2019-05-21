@@ -43,7 +43,7 @@ Node *assign();
 Node *equality();
 Node *add();
 Node *mul();
-Node *term();
+Node *primary();
 
 int consume(int ty) {
   Token *t = tokens->data[pos];
@@ -195,18 +195,57 @@ Node *assign() {
   return node;
 }
 
-// equality: equality "==" add | equality "!=" add | add
+// relational: relational "<=" add | relational ">=" add | add
 //
-// equality: add equality'
-// equality': "==" add equality' | "!=" add equality | e
-Node *equality() {
+// relational: add relational'
+// relational': "<=" add relational' | ">=" add relational | e
+Node *relational() {
   Node *node = add();
   while (1) {
-    if (consume(TK_EQ)) {
-      node = new_node(ND_EQ, node, add());
-    } else if (consume(TK_NE)) {
-      node = new_node(ND_NE, node, add());
-    } else {
+    Token *t = tokens->data[pos];
+    switch (t->ty) {
+    case TK_LE:
+      pos++;
+      node = new_node(ND_LE, node, add());
+      break;
+    case TK_GE:
+      pos++;
+      node = new_node(ND_GE, node, add());
+      break;
+    default:
+      return node;
+    }
+  }
+}
+
+/*
+ * equality-expression:
+ *     relational-expression
+ *     equality-expression "==" relational-expression
+ *     equality-expression "!=" relational-expression
+ */
+Node *equality() {
+  /*
+   * Modified syntax for removing left recursion
+   *
+   * equality:
+   *     relational equality'
+   * equality':
+   *     "==" relational equality' | "!=" relational equality | e
+   */
+  Node *node = relational();
+  while (1) {
+    Token *t = tokens->data[pos];
+    switch (t->ty) {
+    case TK_EQ:
+      pos++;
+      node = new_node(ND_EQ, node, relational());
+      break;
+    case TK_NE:
+      pos++;
+      node = new_node(ND_NE, node, relational());
+      break;
+    default:
       return node;
     }
   }
@@ -233,10 +272,18 @@ Node *function_call(Token *t) {
   return node;
 }
 
-// term: "(" add ")" | ident | num
-Node *term() {
+/**
+ * primary-expression:
+ *     identifier
+ *     constant
+ *     string-literal // TODO
+ *     "(" expression ")"
+ *     generic-selection // TODO
+ */
+Node *primary() {
+  // "(" expression ")"
   if (consume('(')) {
-    Node *node = add();
+    Node *node = expression();
     if (!consume(')')) {
       Token *t = tokens->data[pos];
       error_at("expected ')'", t->input);
@@ -244,6 +291,7 @@ Node *term() {
     return node;
   }
 
+  // identifier
   Token *t = tokens->data[pos];
   if (t->ty == TK_IDENT) {
     pos++;
@@ -261,12 +309,14 @@ Node *term() {
     return node;
   }
 
+  // constant
   if (t->ty == TK_NUM) {
     Node *node = new_node_num(t->val);
     pos++;
     return node;
   }
-  error_at("expected number or '('", t->input);
+
+  error_at("expected number, ident or '('", t->input);
 }
 
 // mul: mul "*" term | mul "/" term | term
@@ -274,12 +324,12 @@ Node *term() {
 // mul: term mul'
 // mul': "*" term mul' | "/" term mul' | e
 Node *mul() {
-  Node *node = term();
+  Node *node = primary();
   while (1) {
     if (consume('*')) {
-      node = new_node('*', node, term());
+      node = new_node('*', node, primary());
     } else if (consume('/')) {
-      node = new_node('/', node, term());
+      node = new_node('/', node, primary());
     } else {
       return node;
     }

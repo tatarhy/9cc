@@ -43,9 +43,17 @@ int iskeyword(char *p, char *keyword) {
   return strncmp(p, keyword, n) == 0 && !isalnum(p[n]) && p[n] != '_';
 }
 
+struct {
+  char *name;
+  int ty;
+} symbols[] = {
+    {"==", TK_EQ}, {"!=", TK_NE}, {"<=", TK_LE}, {">=", TK_GE}, {NULL, 0}};
+
 void tokenize() {
   char *p = user_input;
   tokens = new_vector();
+
+loop:
   while (*p) {
     if (isspace(*p)) {
       p++;
@@ -83,32 +91,17 @@ void tokenize() {
       continue;
     }
 
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
-        *p == ')' || *p == ';' || *p == ',' || *p == '{' || *p == '}') {
+    for (int i = 0; symbols[i].name != NULL; i++) {
+      if (strncmp(p, symbols[i].name, 2) == 0) {
+        vec_push(tokens, new_token_ty(p, symbols[i].ty));
+        p += 2;
+        goto loop;
+      }
+    }
+
+    if (strchr("+-*/=!(){},;", *p) != NULL) {
       vec_push(tokens, new_token(p));
       p++;
-      continue;
-    }
-
-    if (*p == '=') {
-      p++;
-      if (*p == '=') {
-        vec_push(tokens, new_token_ty(p, TK_EQ));
-        p++;
-        continue;
-      }
-      vec_push(tokens, new_token(p - 1));
-      continue;
-    }
-
-    if (*p == '!') {
-      p++;
-      if (*p == '=') {
-        vec_push(tokens, new_token_ty(p, TK_NE));
-        p++;
-        continue;
-      }
-      vec_push(tokens, new_token(p - 1));
       continue;
     }
 

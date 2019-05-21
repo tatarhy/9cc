@@ -3,6 +3,8 @@ enum {
   TK_IDENT,
   TK_EQ,  // ==
   TK_NE,  // !=
+  TK_LE,  // <=
+  TK_GE,  // >=
   TK_IF,  // if
   TK_RET, // return
   TK_EOF,
@@ -20,6 +22,8 @@ enum {
   ND_IDENT,
   ND_EQ,
   ND_NE,
+  ND_LE,
+  ND_GE,
   ND_IF,
   ND_RET,
   ND_BLOCK,
