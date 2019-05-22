@@ -1,12 +1,13 @@
 enum {
   TK_NUM = 256,
   TK_IDENT,
-  TK_EQ,  // ==
-  TK_NE,  // !=
-  TK_LE,  // <=
-  TK_GE,  // >=
-  TK_IF,  // if
-  TK_RET, // return
+  TK_EQ,    // ==
+  TK_NE,    // !=
+  TK_LE,    // <=
+  TK_GE,    // >=
+  TK_IF,    // if
+  TK_WHILE, // while
+  TK_RET,   // return
   TK_EOF,
 };
 
@@ -25,6 +26,7 @@ enum {
   ND_LE,
   ND_GE,
   ND_IF,
+  ND_WHILE,
   ND_RET,
   ND_BLOCK,
   ND_CALL,

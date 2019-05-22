@@ -46,6 +46,11 @@ int iskeyword(char *p, char *keyword) {
 struct {
   char *name;
   int ty;
+} keywords[] = {{"if", TK_IF}, {"while", TK_WHILE}, {"return", TK_RET}};
+
+struct {
+  char *name;
+  int ty;
 } symbols[] = {
     {"==", TK_EQ}, {"!=", TK_NE}, {"<=", TK_LE}, {">=", TK_GE}, {NULL, 0}};
 
@@ -60,16 +65,12 @@ loop:
       continue;
     }
 
-    if (iskeyword(p, "return")) {
-      vec_push(tokens, new_token_ty(p, TK_RET));
-      p += 6;
-      continue;
-    }
-
-    if (iskeyword(p, "if")) {
-      vec_push(tokens, new_token_ty(p, TK_IF));
-      p += 2;
-      continue;
+    for (int i = 0; keywords[i].name != NULL; i++) {
+      if (iskeyword(p, keywords[i].name)) {
+        vec_push(tokens, new_token_ty(p, keywords[i].ty));
+        p += strlen(keywords[i].name);
+        goto loop;
+      }
     }
 
     /*

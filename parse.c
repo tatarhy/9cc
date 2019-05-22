@@ -103,6 +103,9 @@ Node *expression();
  * selection-statement:
  *     "if" "(" expression ")" statement
  *
+ * iteration-statement:
+ *     "while" "(" expression ")" statement
+ *
  * expression-statement:
  *     expression ";"
  *
@@ -121,6 +124,19 @@ Node *stmt() {
       error_at("expected ')'", t->input);
     }
     return new_node(ND_IF, exp, stmt());
+  }
+
+  if (consume(TK_WHILE)) {
+    if (!consume('(')) {
+      Token *t = tokens->data[pos];
+      error_at("expected '(' after 'while' token", t->input);
+    }
+    Node *exp = expression();
+    if (!consume(')')) {
+      Token *t = tokens->data[pos];
+      error_at("expected ')'", t->input);
+    }
+    return new_node(ND_WHILE, exp, stmt());
   }
 
   /*

@@ -81,6 +81,30 @@ void gen(Node *node) {
     return;
   }
 
+  if (node->ty == ND_WHILE) {
+    // evaluate conditional expression
+    printf(".Lbegin%d:\n", lcnt);
+    gen(node->lhs);
+    printf("    pop rax\n");
+    printf("    cmp rax, 0\n");
+
+    // FIXME?
+    // push expression result to stack
+    // because all statement pop top of stack at end
+    printf("    push rax\n");
+
+    // jump to end of if statement if condition is falth
+    printf("    je .Lend%d\n", lcnt);
+
+    // pop top of stack pushed previous
+    printf("    pop rax\n");
+    gen(node->rhs);
+    printf("    jmp .Lbegin%d\n", lcnt);
+    printf(".Lend%d:\n", lcnt);
+    lcnt++;
+    return;
+  }
+
   if (node->ty == ND_BLOCK) {
     Vector *stmts = node->stmts;
     for (int i = 0; i < stmts->len; i++) {
