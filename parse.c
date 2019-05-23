@@ -220,6 +220,14 @@ Node *relational() {
   while (1) {
     Token *t = tokens->data[pos];
     switch (t->ty) {
+    case '<':
+      pos++;
+      node = new_node('<', node, add());
+      break;
+    case '>':
+      pos++;
+      node = new_node('>', node, add());
+      break;
     case TK_LE:
       pos++;
       node = new_node(ND_LE, node, add());

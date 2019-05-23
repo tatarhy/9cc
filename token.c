@@ -100,7 +100,7 @@ loop:
       }
     }
 
-    if (strchr("+-*/=!(){},;", *p) != NULL) {
+    if (strchr("+-*/=!<>(){},;", *p) != NULL) {
       vec_push(tokens, new_token(p));
       p++;
       continue;
