@@ -21,7 +21,7 @@ try() {
 
 try   0 'main(){0;}'
 try  42 'main(){42;}'
-try  21 'main(){5+20-4;}'
+try  11 'main(){-5+20-4;}'
 try   2 'main(){3-2+1;}'
 try  41 'main () { 12 + 34 - 5 ; }'
 try  47 'main(){5+6*7;}'

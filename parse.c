@@ -343,17 +343,40 @@ Node *primary() {
   error_at("expected number, ident or '('", t->input);
 }
 
-// mul: mul "*" term | mul "/" term | term
-//
-// mul: term mul'
-// mul': "*" term mul' | "/" term mul' | e
+/**
+ * unary-expression:
+ *     postfix-expression
+ *     "++" unary-expression // TODO
+ *     "-- unary-expression // TODO
+ *     unary-operator cast-expression
+ *     "sizeof" unary-expression // TODO
+ *     "sizeof" "(" type-name ")" // TODO
+ *     "_Alignof" "(" type-name ")" // TODO
+ */
+Node *unary() {
+  if (consume('+')) {
+    return primary();
+  }
+  if (consume('-')) {
+    return new_node('-', new_node_num(0), primary());
+  }
+  return primary();
+}
+
+/**
+ * multiplicative-expression:
+ *     cast-expression
+ *     multiplicative-expression "*" cast-expression
+ *     multiplicative-expression "/" cast-expression
+ *     multiplicative-expression "%" cast-expression // TODO
+ */
 Node *mul() {
-  Node *node = primary();
+  Node *node = unary();
   while (1) {
     if (consume('*')) {
-      node = new_node('*', node, primary());
+      node = new_node('*', node, unary());
     } else if (consume('/')) {
-      node = new_node('/', node, primary());
+      node = new_node('/', node, unary());
     } else {
       return node;
     }
