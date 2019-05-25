@@ -193,9 +193,11 @@ void gen_func(Function *f) {
   }
 
   for (int i = 0; i < f->code->len; i++) {
-    gen(f->code->data[i]);
+    if (f->code->data[i] != NULL) {
+      gen(f->code->data[i]);
 
-    printf("    pop rax\n");
+      printf("    pop rax\n");
+    }
   }
 
   // epilogue

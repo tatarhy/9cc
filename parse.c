@@ -93,6 +93,24 @@ void program() {
 
 Node *expression();
 
+/**
+ * declaration:
+ *     declaration-specifiers init-declarator-list_opt ";"
+ *     static_assert-declaration
+ */
+Node *declaration() {
+  consume(TK_INT);
+  Token *t = tokens->data[pos];
+  Function *f = funcs->data[funcs->len - 1];
+  int *offset = malloc(sizeof(int));
+  *offset = f->lval_len + 1;
+  map_put(f->lval, t->name, offset);
+  f->lval_len++;
+  consume(';');
+
+  return NULL;
+}
+
 /*
  * statement:
  *     selection-statement
@@ -172,12 +190,17 @@ Node *stmt() {
     }
     return node;
   } else {
-    Node *node = expression();
-    if (!consume(';')) {
-      Token *t = tokens->data[pos];
-      error_at("expected ';'", t->input);
+    Token *t = tokens->data[pos];
+    if (t->ty == TK_INT) {
+      return declaration();
+    } else {
+      Node *node = expression();
+      if (!consume(';')) {
+        Token *t = tokens->data[pos];
+        error_at("expected ';'", t->input);
+      }
+      return node;
     }
-    return node;
   }
 }
 
@@ -325,10 +348,7 @@ Node *primary() {
     Node *node = new_node_ident(t->name);
     Function *f = funcs->data[funcs->len - 1];
     if (map_get(f->lval, t->name) == NULL) {
-      int *offset = malloc(sizeof(int));
-      *offset = f->lval_len + 1;
-      map_put(f->lval, t->name, offset);
-      f->lval_len++;
+      error_at("'' was not declared in this scope", t->input);
     }
     return node;
   }

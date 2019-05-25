@@ -46,7 +46,8 @@ int iskeyword(char *p, char *keyword) {
 struct {
   char *name;
   int ty;
-} keywords[] = {{"if", TK_IF}, {"while", TK_WHILE}, {"return", TK_RET}};
+} keywords[] = {
+    {"int", TK_INT}, {"if", TK_IF}, {"while", TK_WHILE}, {"return", TK_RET}};
 
 struct {
   char *name;

@@ -5,6 +5,7 @@ enum {
   TK_NE,    // !=
   TK_LE,    // <=
   TK_GE,    // >=
+  TK_INT,   // int
   TK_IF,    // if
   TK_WHILE, // while
   TK_RET,   // return
