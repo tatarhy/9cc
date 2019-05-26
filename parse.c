@@ -59,6 +59,7 @@ Vector *funcs;
 void program() {
   funcs = new_vector();
   while (((Token *)tokens->data[pos])->ty != TK_EOF) {
+    consume(TK_INT);
     Token *t = tokens->data[pos];
     Function *f = new_func(t->name);
     vec_push(funcs, f);
@@ -66,6 +67,7 @@ void program() {
     consume('(');
     if (!consume(')')) {
       while (1) {
+        consume(TK_INT);
         t = tokens->data[pos];
         if (map_get(f->lval, t->name) == NULL) {
           int *offset = malloc(sizeof(int));
