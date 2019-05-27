@@ -95,19 +95,56 @@ void program() {
 
 Node *expression();
 
+/*
+ * declaration-specifiers:
+ *     storage-class-specifier declaration-specifiers_opt
+ *     type-specifier declaration-specifiers_opt
+ *     type-qualifier declaration-specifiers_opt
+ *     function-specifier declaration-specifiers_opt
+ *     alignment-specifier declaration-specifiers_opt
+ */
+Type *decl_specifiers() {
+  Token *t = tokens->data[pos];
+  if (consume(TK_INT)) {
+    Type *type = malloc(sizeof(Type));
+    type->ty = INT;
+    return type;
+  }
+  error_at("expected int", t->input);
+}
+
+/*
+ * declarator:
+ *     pointer_opt direct-declarator
+ */
+void declarator(Type *type) {
+  while (consume('*')) {
+    Type *type = malloc(sizeof(Type));
+    type->ty = PTR;
+    type->ptrto = type;
+  }
+  // identifier
+  Token *t = tokens->data[pos];
+  if (t->ty != TK_IDENT) {
+    error_at("expected token", t->input);
+  }
+  pos++;
+
+  Function *f = funcs->data[funcs->len - 1];
+  int *offset = malloc(sizeof(int));
+  *offset = f->lval_len + 1;
+  map_put(f->lval, t->name, offset);
+  f->lval_len++;
+}
+
 /**
  * declaration:
  *     declaration-specifiers init-declarator-list_opt ";"
  *     static_assert-declaration
  */
 Node *declaration() {
-  consume(TK_INT);
-  Token *t = tokens->data[pos];
-  Function *f = funcs->data[funcs->len - 1];
-  int *offset = malloc(sizeof(int));
-  *offset = f->lval_len + 1;
-  map_put(f->lval, t->name, offset);
-  f->lval_len++;
+  Type *type = decl_specifiers();
+  declarator(type);
   consume(';');
 
   return NULL;
@@ -381,6 +418,12 @@ Node *unary() {
   }
   if (consume('-')) {
     return new_node('-', new_node_num(0), primary());
+  }
+  if (consume('&')) {
+    return new_node(ND_ADDR, primary(), NULL);
+  }
+  if (consume('*')) {
+    return new_node(ND_DEREF, primary(), NULL);
   }
   return primary();
 }

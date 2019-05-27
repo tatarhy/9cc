@@ -31,6 +31,8 @@ enum {
   ND_RET,
   ND_BLOCK,
   ND_CALL,
+  ND_ADDR,
+  ND_DEREF,
 };
 
 typedef struct {
@@ -53,6 +55,11 @@ typedef struct Node {
   Vector *args;
   Vector *stmts;
 } Node;
+
+typedef struct Type {
+  enum {INT, PTR} ty;
+  struct Type *ptrto;
+} Type;
 
 typedef struct {
   char *name;

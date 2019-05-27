@@ -61,5 +61,6 @@ try 108 'int main(){int a;int b;a=13;b=57;if(a==13)if(b==57)b=108;return b;}'
 try  70 'int main(){int a;int b;a=13;b=57;if(a==12){a=54;b=108;}return a+b;}'
 try 162 'int main(){int a;int b;a=13;b=57;if(a==13){a=54;b=108;}return a+b;}'
 try  55 'int main(){int sum;int i;sum=0;i=1;while(i<=10){sum=sum+i;i=i+1;}return sum;}'
+try   3 'int main(){int x;x=3;int *y;y=&x;return *y;}'
 
 echo OK

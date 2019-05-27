@@ -114,13 +114,31 @@ void gen(Node *node) {
   }
 
   if (node->ty == '=') {
-    gen_lval(node->lhs);
+    if (node->lhs->ty == ND_DEREF) {
+      gen(node->lhs);
+    } else {
+      gen_lval(node->lhs);
+    }
+
     gen(node->rhs);
 
     printf("    pop rdi\n");
     printf("    pop rax\n");
     printf("    mov [rax], rdi\n");
     printf("    push rdi\n");
+    return;
+  }
+
+  if (node->ty == ND_ADDR) {
+    gen_lval(node->lhs);
+    return;
+  }
+
+  if (node->ty == ND_DEREF) {
+    gen(node->lhs);
+    printf("    pop rax\n");
+    printf("    mov rax, [rax]\n");
+    printf("    push rax\n");
     return;
   }
 
