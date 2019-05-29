@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-int pos = 0;
+static int pos = 0;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -45,9 +45,12 @@ Node *add();
 Node *mul();
 Node *primary();
 
-int consume(int ty) {
-  Token *t = tokens->data[pos];
-  if (t->ty != ty) {
+static Token *gettok() {
+  return tokens->data[pos];
+}
+
+static int consume(int ty) {
+  if (gettok()->ty != ty) {
     return 0;
   }
   pos++;
@@ -150,6 +153,73 @@ Node *declaration() {
   return NULL;
 }
 
+static Node *if_stmt() {
+  consume(TK_IF);
+  if (!consume('(')) {
+    error_at("expected '(' after 'if' token", gettok()->input);
+  }
+  Node *exp = expression();
+  if (!consume(')')) {
+    error_at("expected ')'", gettok()->input);
+  }
+  return new_node(ND_IF, exp, stmt());
+}
+
+static Node *while_stmt() {
+  consume(TK_WHILE);
+  if (!consume('(')) {
+    error_at("expected '(' after 'while' token", gettok()->input);
+  }
+  Node *exp = expression();
+  if (!consume(')')) {
+    error_at("expected ')'", gettok()->input);
+  }
+  return new_node(ND_WHILE, exp, stmt());
+}
+
+/*
+ * compound-statement:
+ *     "{" block-item-list_opt "}"
+ *
+ * block-item-list:
+ *     block-item
+ *     block-item-list
+ *
+ * block-item:
+ *     declaration // TODO
+ *     statement
+ */
+static Node *compound_stmt() {
+  consume('{');
+  Vector *stmts = new_vector();
+  while (!consume('}')) {
+    vec_push(stmts, stmt());
+  }
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_BLOCK;
+  node->stmts = stmts;
+  return node;
+}
+
+static Node *return_stmt() {
+  consume(TK_RET);
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_RET;
+  node->lhs = expression();
+  if (!consume(';')) {
+    error_at("expected ';'", gettok()->input);
+  }
+  return node;
+}
+
+static Node *expression_stmt() {
+  Node *node = expression();
+  if (!consume(';')) {
+    error_at("expected ';'", gettok()->input);
+  }
+  return node;
+}
+
 /*
  * statement:
  *     selection-statement
@@ -170,76 +240,19 @@ Node *declaration() {
  *     "return" expression_opt ";"
  */
 Node *stmt() {
-  if (consume(TK_IF)) {
-    if (!consume('(')) {
-      Token *t = tokens->data[pos];
-      error_at("expected '(' after 'if' token", t->input);
-    }
-    Node *exp = expression();
-    if (!consume(')')) {
-      Token *t = tokens->data[pos];
-      error_at("expected ')'", t->input);
-    }
-    return new_node(ND_IF, exp, stmt());
-  }
-
-  if (consume(TK_WHILE)) {
-    if (!consume('(')) {
-      Token *t = tokens->data[pos];
-      error_at("expected '(' after 'while' token", t->input);
-    }
-    Node *exp = expression();
-    if (!consume(')')) {
-      Token *t = tokens->data[pos];
-      error_at("expected ')'", t->input);
-    }
-    return new_node(ND_WHILE, exp, stmt());
-  }
-
-  /*
-   * compound-statement:
-   *     "{" block-item-list_opt "}"
-   *
-   * block-item-list:
-   *     block-item
-   *     block-item-list
-   *
-   * block-item:
-   *     declaration // TODO
-   *     statement
-   */
-  if (consume('{')) {
-    Vector *stmts = new_vector();
-    while (!consume('}')) {
-      vec_push(stmts, stmt());
-    }
-    Node *node = malloc(sizeof(Node));
-    node->ty = ND_BLOCK;
-    node->stmts = stmts;
-    return node;
-  }
-
-  if (consume(TK_RET)) {
-    Node *node = malloc(sizeof(Node));
-    node->ty = ND_RET;
-    node->lhs = expression();
-    if (!consume(';')) {
-      Token *t = tokens->data[pos];
-      error_at("expected ';'", t->input);
-    }
-    return node;
-  } else {
-    Token *t = tokens->data[pos];
-    if (t->ty == TK_INT) {
-      return declaration();
-    } else {
-      Node *node = expression();
-      if (!consume(';')) {
-        Token *t = tokens->data[pos];
-        error_at("expected ';'", t->input);
-      }
-      return node;
-    }
+  switch (gettok()->ty) {
+  case TK_IF:
+    return if_stmt();
+  case TK_WHILE:
+    return while_stmt();
+  case '{':
+    return compound_stmt();
+  case TK_RET:
+    return return_stmt();
+  case TK_INT:
+    return declaration();
+  default:
+    return expression_stmt();
   }
 }
 
