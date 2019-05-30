@@ -61,7 +61,7 @@ void gen(Node *node) {
 
   if (node->ty == ND_IF) {
     // evaluate conditional expression
-    gen(node->lhs);
+    gen(node->cond);
     printf("    pop rax\n");
     printf("    cmp rax, 0\n");
 
@@ -70,12 +70,20 @@ void gen(Node *node) {
     // because all statement pop top of stack at end
     printf("    push rax\n");
 
-    // jump to end of if statement if condition is falth
-    printf("    je .Lend%d\n", lcnt);
+    if (node->els == NULL) {
+      // jump to end of if statement if condition is falth
+      printf("    je .Lend%d\n", lcnt);
 
-    // pop top of stack pushed previous
-    printf("    pop rax\n");
-    gen(node->rhs);
+      // pop top of stack pushed previous
+      printf("    pop rax\n");
+      gen(node->then);
+    } else {
+      printf("    je .Lelse%d\n", lcnt);
+      gen(node->then);
+      printf("    jmp .Lend%d\n", lcnt);
+      printf(".Lelse%d:\n", lcnt);
+      gen(node->els);
+    }
     printf(".Lend%d:\n", lcnt);
     lcnt++;
     return;

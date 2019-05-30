@@ -7,6 +7,7 @@ enum {
   TK_GE,    // >=
   TK_INT,   // int
   TK_IF,    // if
+  TK_ELSE,  // else
   TK_WHILE, // while
   TK_RET,   // return
   TK_EOF,
@@ -50,6 +51,14 @@ typedef struct Node {
   int ty;
   struct Node *lhs;
   struct Node *rhs;
+
+  struct Node *cond;
+  struct Node *then;
+  struct Node *els;
+  struct Node *init;
+  struct Node *inc;
+  struct Node *body;
+
   int val;
   char *name;
   Vector *args;

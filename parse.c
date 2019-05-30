@@ -21,6 +21,15 @@ Node *new_node_ident(char *name) {
   return node;
 }
 
+Node *new_node_if(Node *cond, Node *then, Node *els) {
+  Node *node = malloc(sizeof(Node));
+  node->ty = ND_IF;
+  node->cond = cond;
+  node->then = then;
+  node->els = els;
+  return node;
+}
+
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_NUM;
@@ -162,7 +171,11 @@ static Node *if_stmt() {
   if (!consume(')')) {
     error_at("expected ')'", gettok()->input);
   }
-  return new_node(ND_IF, exp, stmt());
+  Node *then = stmt();
+  if (consume(TK_ELSE)) {
+    return new_node_if(exp, then, stmt());
+  }
+  return new_node_if(exp, then, NULL);
 }
 
 static Node *while_stmt() {
