@@ -11,9 +11,8 @@ try() {
     ./tmp
     actual="$?"
 
-    if [ "$actual" = "$expected" ]; then
-        echo "$input => $actual"
-    else
+    echo "$input => $actual"
+    if [ "$actual" != "$expected" ]; then
         echo "$expected expected, but got $actual"
         exit 1
     fi
