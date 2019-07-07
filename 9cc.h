@@ -1,4 +1,4 @@
-enum {
+typedef enum {
   TK_NUM = 256,
   TK_IDENT,
   TK_EQ,    // ==
@@ -11,13 +11,14 @@ enum {
   TK_WHILE, // while
   TK_RET,   // return
   TK_EOF,
-};
+} TokenKind;
 
-typedef struct {
-  int ty;
+typedef struct Token {
+  struct Token *next;
+  TokenKind ty;
   int val;
-  char *name;
-  char *input;
+  char *str;
+  int len;
 } Token;
 
 enum {
@@ -82,8 +83,8 @@ Vector *new_vector();
 void vec_push(Vector *vec, void *elem);
 
 Map *new_map();
-void map_put(Map *map, char *key, void *val);
-void *map_get(Map *map, char *key);
+void map_put(Map *map, char *key, int len, void *val);
+void *map_get(Map *map, char *key, int len);
 
 void runtest();
 
@@ -91,7 +92,7 @@ void error(char *msg, ...);
 void error_at(char *msg, char *loc);
 
 extern char *user_input;
-extern Vector *tokens;
+extern Token *tokens;
 extern Vector *code;
 extern Vector *funcs;
 

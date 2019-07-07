@@ -17,7 +17,7 @@ void gen_lval(Node *node) {
     exit(1);
   }
   // resolve variable address and push result to stack top
-  int *idx = map_get(f_now->lval, node->name);
+  int *idx = map_get(f_now->lval, node->name, strlen(node->name));
   int offset = *idx * 8;
   printf("    mov rax, rbp\n");
   printf("    sub rax, %d\n", offset);

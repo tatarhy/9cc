@@ -50,14 +50,17 @@ Map *new_map() {
   return map;
 }
 
-void map_put(Map *map, char *key, void *val) {
+void map_put(Map *map, char *key, int len, void *val) {
+  char *name = malloc((len + 1) * sizeof(char));
+  strncpy(name, key, len);
+  name[len] = '\0';
   vec_push(map->keys, key);
   vec_push(map->vals, val);
 }
 
-void *map_get(Map *map, char *key) {
+void *map_get(Map *map, char *key, int len) {
   for (int i = map->keys->len - 1; i >= 0; i--) {
-    if (strcmp(map->keys->data[i], key) == 0) {
+    if (strncmp(map->keys->data[i], key, len) == 0) {
       return map->vals->data[i];
     }
   }
@@ -88,16 +91,16 @@ void test_vector() {
 
 void test_map() {
   Map *map = new_map();
-  expect(__LINE__, 0, (int)map_get(map, "foo"));
+  expect(__LINE__, 0, (int)map_get(map, "foo", 3));
 
-  map_put(map, "foo", (void *)2);
-  expect(__LINE__, 2, (int)map_get(map, "foo"));
+  map_put(map, "foo", 3, (void *)2);
+  expect(__LINE__, 2, (int)map_get(map, "foo", 3));
 
-  map_put(map, "bar", (void *)4);
-  expect(__LINE__, 4, (int)map_get(map, "bar"));
+  map_put(map, "bar", 3, (void *)4);
+  expect(__LINE__, 4, (int)map_get(map, "bar", 3));
 
-  map_put(map, "foo", (void *)6);
-  expect(__LINE__, 6, (int)map_get(map, "foo"));
+  map_put(map, "foo", 3, (void *)6);
+  expect(__LINE__, 6, (int)map_get(map, "foo", 3));
 }
 
 void runtest() {

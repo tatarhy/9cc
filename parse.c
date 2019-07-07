@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int pos = 0;
+static Token *token;
 
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
@@ -14,9 +14,12 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
   return node;
 }
 
-Node *new_node_ident(char *name) {
+Node *new_node_ident(Token *t) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_IDENT;
+  char *name = malloc((t->len + 1) * sizeof(char));
+  strncpy(name, t->str, t->len);
+  name[t->len] = '\0';
   node->name = name;
   return node;
 }
@@ -37,8 +40,11 @@ Node *new_node_num(int val) {
   return node;
 }
 
-Function *new_func(char *name) {
+Function *new_func(Token *t) {
   Function *func = malloc(sizeof(Function));
+  char *name = malloc((t->len + 1) * sizeof(char));
+  strncpy(name, t->str, t->len);
+  name[t->len] = '\0';
   func->name = name;
   func->lval = new_map();
   func->lval_len = 0;
@@ -54,48 +60,45 @@ Node *add();
 Node *mul();
 Node *primary();
 
-static Token *gettok() {
-  return tokens->data[pos];
-}
-
 static int consume(int ty) {
-  if (gettok()->ty != ty) {
+  if (token->ty != ty) {
     return 0;
   }
-  pos++;
+  token = token->next;
   return 1;
 }
 
 Vector *funcs;
 // program: stmt program | e
 void program() {
+  token = tokens;
   funcs = new_vector();
-  while (((Token *)tokens->data[pos])->ty != TK_EOF) {
+  while (token != NULL) {
     consume(TK_INT);
-    Token *t = tokens->data[pos];
-    Function *f = new_func(t->name);
+    Token *t = token;
+    Function *f = new_func(t);
     vec_push(funcs, f);
-    pos++;
+    token = token->next;
     consume('(');
     if (!consume(')')) {
       while (1) {
         consume(TK_INT);
-        t = tokens->data[pos];
-        if (map_get(f->lval, t->name) == NULL) {
+        t = token;
+        if (map_get(f->lval, t->str, t->len) == NULL) {
           int *offset = malloc(sizeof(int));
           *offset = f->lval_len + 1;
-          map_put(f->lval, t->name, offset);
+          map_put(f->lval, t->str, t->len, offset);
           f->lval_len++;
           f->arg_len++;
         }
-        pos++;
+        token = token->next;
         if (!consume(',')) {
           break;
         }
       }
       if (!consume(')')) {
-        t = tokens->data[pos];
-        error_at("expected ')'", t->input);
+        t = token;
+        error_at("expected ')'", t->str);
       }
     }
     consume('{');
@@ -116,13 +119,12 @@ Node *expression();
  *     alignment-specifier declaration-specifiers_opt
  */
 Type *decl_specifiers() {
-  Token *t = tokens->data[pos];
   if (consume(TK_INT)) {
     Type *type = malloc(sizeof(Type));
     type->ty = INT;
     return type;
   }
-  error_at("expected int", t->input);
+  error_at("expected int", token->str);
 }
 
 /*
@@ -135,18 +137,19 @@ void declarator(Type *type) {
     type->ty = PTR;
     type->ptrto = type;
   }
+
   // identifier
-  Token *t = tokens->data[pos];
-  if (t->ty != TK_IDENT) {
-    error_at("expected token", t->input);
+  if (token->ty != TK_IDENT) {
+    error_at("expected token", token->str);
   }
-  pos++;
 
   Function *f = funcs->data[funcs->len - 1];
   int *offset = malloc(sizeof(int));
   *offset = f->lval_len + 1;
-  map_put(f->lval, t->name, offset);
+  map_put(f->lval, token->str, token->len, offset);
   f->lval_len++;
+
+  token = token->next;
 }
 
 /**
@@ -165,11 +168,11 @@ Node *declaration() {
 static Node *if_stmt() {
   consume(TK_IF);
   if (!consume('(')) {
-    error_at("expected '(' after 'if' token", gettok()->input);
+    error_at("expected '(' after 'if' token", token->str);
   }
   Node *exp = expression();
   if (!consume(')')) {
-    error_at("expected ')'", gettok()->input);
+    error_at("expected ')'", token->str);
   }
   Node *then = stmt();
   if (consume(TK_ELSE)) {
@@ -181,11 +184,11 @@ static Node *if_stmt() {
 static Node *while_stmt() {
   consume(TK_WHILE);
   if (!consume('(')) {
-    error_at("expected '(' after 'while' token", gettok()->input);
+    error_at("expected '(' after 'while' token", token->str);
   }
   Node *exp = expression();
   if (!consume(')')) {
-    error_at("expected ')'", gettok()->input);
+    error_at("expected ')'", token->str);
   }
   return new_node(ND_WHILE, exp, stmt());
 }
@@ -220,7 +223,7 @@ static Node *return_stmt() {
   node->ty = ND_RET;
   node->lhs = expression();
   if (!consume(';')) {
-    error_at("expected ';'", gettok()->input);
+    error_at("expected ';'", token->str);
   }
   return node;
 }
@@ -228,7 +231,7 @@ static Node *return_stmt() {
 static Node *expression_stmt() {
   Node *node = expression();
   if (!consume(';')) {
-    error_at("expected ';'", gettok()->input);
+    error_at("expected ';'", token->str);
   }
   return node;
 }
@@ -253,7 +256,7 @@ static Node *expression_stmt() {
  *     "return" expression_opt ";"
  */
 Node *stmt() {
-  switch (gettok()->ty) {
+  switch (token->ty) {
   case TK_IF:
     return if_stmt();
   case TK_WHILE:
@@ -299,34 +302,36 @@ Node *assign() {
   return node;
 }
 
-// relational: relational "<=" add | relational ">=" add | add
-//
-// relational: add relational'
-// relational': "<=" add relational' | ">=" add relational | e
+/*
+ * relational-expression:
+ *     shift-expression
+ *     relational-expression "<" shift-expression
+ *     relational-expression ">" shift-expression
+ *     relational-expression "<=" shift-expression
+ *     relational-expression ">=" shift-expression
+ */
 Node *relational() {
+  // relational: add relational'
+  // relational': "<=" add relational' | ">=" add relational | e
   Node *node = add();
   while (1) {
-    Token *t = tokens->data[pos];
-    switch (t->ty) {
-    case '<':
-      pos++;
+    if (consume('<')) {
       node = new_node('<', node, add());
-      break;
-    case '>':
-      pos++;
-      node = new_node('>', node, add());
-      break;
-    case TK_LE:
-      pos++;
-      node = new_node(ND_LE, node, add());
-      break;
-    case TK_GE:
-      pos++;
-      node = new_node(ND_GE, node, add());
-      break;
-    default:
-      return node;
+      continue;
     }
+    if (consume('>')) {
+      node = new_node('>', node, add());
+      continue;
+    }
+    if (consume(TK_LE)) {
+      node = new_node(ND_LE, node, add());
+      continue;
+    }
+    if (consume(TK_GE)) {
+      node = new_node(ND_GE, node, add());
+      continue;
+    }
+    return node;
   }
 }
 
@@ -347,26 +352,25 @@ Node *equality() {
    */
   Node *node = relational();
   while (1) {
-    Token *t = tokens->data[pos];
-    switch (t->ty) {
-    case TK_EQ:
-      pos++;
+    if (consume(TK_EQ)) {
       node = new_node(ND_EQ, node, relational());
-      break;
-    case TK_NE:
-      pos++;
-      node = new_node(ND_NE, node, relational());
-      break;
-    default:
-      return node;
+      continue;
     }
+    if (consume(TK_NE)) {
+      node = new_node(ND_NE, node, relational());
+      continue;
+    }
+    return node;
   }
 }
 
 Node *function_call(Token *t) {
   Node *node = malloc(sizeof(Node));
   node->ty = ND_CALL;
-  node->name = t->name;
+  char *name = malloc((t->len + 1) * sizeof(char));
+  strncpy(name, t->str, t->len);
+  name[t->len] = '\0';
+  node->name = name;
   node->args = new_vector();
   if (consume(')')) {
     return node;
@@ -378,8 +382,7 @@ Node *function_call(Token *t) {
     }
   }
   if (!consume(')')) {
-    Token *t = tokens->data[pos];
-    error_at("expected ')'", t->input);
+    error_at("expected ')'", token->str);
   }
   return node;
 }
@@ -397,35 +400,32 @@ Node *primary() {
   if (consume('(')) {
     Node *node = expression();
     if (!consume(')')) {
-      Token *t = tokens->data[pos];
-      error_at("expected ')'", t->input);
+      error_at("expected ')'", token->str);
     }
     return node;
   }
 
   // identifier
-  Token *t = tokens->data[pos];
-  if (t->ty == TK_IDENT) {
-    pos++;
+  Token *t = token;
+  if (consume(TK_IDENT)) {
     if (consume('(')) {
       return function_call(t);
     }
-    Node *node = new_node_ident(t->name);
+    Node *node = new_node_ident(t);
     Function *f = funcs->data[funcs->len - 1];
-    if (map_get(f->lval, t->name) == NULL) {
-      error_at("'' was not declared in this scope", t->input);
+    if (map_get(f->lval, t->str, t->len) == NULL) {
+      error_at("'' was not declared in this scope", t->str);
     }
     return node;
   }
 
   // constant
-  if (t->ty == TK_NUM) {
+  if (consume(TK_NUM)) {
     Node *node = new_node_num(t->val);
-    pos++;
     return node;
   }
 
-  error_at("expected number, ident or '('", t->input);
+  error_at("expected number, ident or '('", t->str);
 }
 
 /**

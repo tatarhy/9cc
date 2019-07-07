@@ -4,37 +4,30 @@
 #include <stdlib.h>
 #include <string.h>
 
-Vector *tokens;
+Token *tokens;
 
 Token *new_token(char *p) {
   Token *token = malloc(sizeof(Token));
   token->ty = *p;
-  token->input = p;
+  token->str = p;
+  token->len = 1;
   return token;
 }
 
 Token *new_token_num(char *p, char **endptr) {
   Token *token = malloc(sizeof(Token));
   token->ty = TK_NUM;
-  token->input = p;
+  token->str = p;
   token->val = strtol(p, endptr, 10);
+  token->len = *endptr - p;
   return token;
 }
 
-Token *new_token_ident(char *p, int len) {
-  char *name = malloc(sizeof(char) * (len + 1));
-  strncpy(name, p, len);
-  name[len] = '\0';
-  Token *token = malloc(sizeof(Token));
-  token->ty = TK_IDENT;
-  token->name = name;
-  return token;
-}
-
-Token *new_token_ty(char *p, int ty) {
+Token *new_token_ty(int ty, char *p, int len) {
   Token *token = malloc(sizeof(Token));
   token->ty = ty;
-  token->input = p;
+  token->str = p;
+  token->len = len;
   return token;
 }
 
@@ -60,7 +53,8 @@ struct {
 
 void tokenize() {
   char *p = user_input;
-  tokens = new_vector();
+  Token *token = malloc(sizeof(Token));
+  tokens = token;
 
 loop:
   while (*p) {
@@ -71,8 +65,10 @@ loop:
 
     for (int i = 0; keywords[i].name != NULL; i++) {
       if (iskeyword(p, keywords[i].name)) {
-        vec_push(tokens, new_token_ty(p, keywords[i].ty));
-        p += strlen(keywords[i].name);
+        int len = strlen(keywords[i].name);
+        token->next = new_token_ty(keywords[i].ty, p, len);
+        token = token->next;
+        p += len;
         goto loop;
       }
     }
@@ -92,31 +88,35 @@ loop:
       while (isalnum(*p) || *p == '_') {
         p++;
       }
-      vec_push(tokens, new_token_ident(bp, p - bp));
+      token->next = new_token_ty(TK_IDENT, bp, p - bp);
+      token = token->next;
       continue;
     }
 
     for (int i = 0; symbols[i].name != NULL; i++) {
       if (strncmp(p, symbols[i].name, 2) == 0) {
-        vec_push(tokens, new_token_ty(p, symbols[i].ty));
+        token->next = new_token_ty(symbols[i].ty, p, 2);
+        token = token->next;
         p += 2;
         goto loop;
       }
     }
 
     if (strchr("+-*/=!<>(){},;&", *p) != NULL) {
-      vec_push(tokens, new_token(p));
+      token->next = new_token(p);
+      token = token->next;
       p++;
       continue;
     }
 
     if (isdigit(*p)) {
-      vec_push(tokens, new_token_num(p, &p));
+      token->next = new_token_num(p, &p);
+      token = token->next;
       continue;
     }
 
     error_at("Cannot tokenize", p);
   }
 
-  vec_push(tokens, new_token_ty(p, TK_EOF));
+  tokens = tokens->next;
 }
