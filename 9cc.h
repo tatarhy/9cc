@@ -62,6 +62,7 @@ typedef struct Node {
 
   int val;
   char *name;
+  int offset;
   Vector *args;
   Vector *stmts;
 } Node;
@@ -71,13 +72,23 @@ typedef struct Type {
   struct Type *ptrto;
 } Type;
 
-typedef struct {
+typedef struct LVar {
+    struct LVar *next;
+    char *name;
+    int len;
+    int offset;
+} LVar;
+
+typedef struct Function {
+  struct Function *next;
   char *name;
-  Map *lval;
+  LVar *lvar;
   int lval_len;
   int arg_len;
   Vector *code;
 } Function;
+
+LVar *find_lvar(LVar *lvar, Token *tok);
 
 Vector *new_vector();
 void vec_push(Vector *vec, void *elem);
@@ -94,7 +105,7 @@ void error_at(char *msg, char *loc);
 extern char *user_input;
 extern Token *tokens;
 extern Vector *code;
-extern Vector *funcs;
+extern Function *funcs;
 
 void tokenize();
 void program();

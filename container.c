@@ -27,6 +27,14 @@ void error_at(char *msg, char *loc) {
   exit(1);
 }
 
+LVar *find_lvar(LVar *lvar, Token *tok) {
+  for (LVar *var = lvar; var; var = var->next) {
+    if (var->len == tok->len && memcmp(tok->str, var->name, var->len) == 0)
+      return var;
+  }
+  return NULL;
+}
+
 Vector *new_vector() {
   Vector *vec = malloc(sizeof(Vector));
   vec->data = malloc(sizeof(void *) * 16);

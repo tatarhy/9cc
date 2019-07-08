@@ -40,13 +40,31 @@ Node *new_node_num(int val) {
   return node;
 }
 
+static LVar *lvar_new(Token *tok) {
+  LVar *lvar = malloc(sizeof(LVar));
+  lvar->name = tok->str;
+  lvar->len = tok->len;
+  return lvar;
+}
+
+static void lvar_add(Function *func, LVar *new) {
+  if (func->lvar == NULL) {
+    new->offset = 8;
+    func->lvar = new;
+    return;
+  }
+  new->offset = func->lvar->offset + 8;
+  new->next = func->lvar;
+  func->lvar = new;
+}
+
 Function *new_func(Token *t) {
   Function *func = malloc(sizeof(Function));
   char *name = malloc((t->len + 1) * sizeof(char));
   strncpy(name, t->str, t->len);
   name[t->len] = '\0';
   func->name = name;
-  func->lval = new_map();
+  func->lvar = NULL;
   func->lval_len = 0;
   func->arg_len = 0;
   func->code = new_vector();
@@ -68,26 +86,27 @@ static int consume(int ty) {
   return 1;
 }
 
-Vector *funcs;
+Function *funcs;
+static Function *func;
 // program: stmt program | e
 void program() {
   token = tokens;
-  funcs = new_vector();
+  func = malloc(sizeof(Function));
+  funcs = func;
   while (token != NULL) {
     consume(TK_INT);
     Token *t = token;
     Function *f = new_func(t);
-    vec_push(funcs, f);
+    func->next = f;
+    func = func->next;
     token = token->next;
     consume('(');
     if (!consume(')')) {
       while (1) {
         consume(TK_INT);
         t = token;
-        if (map_get(f->lval, t->str, t->len) == NULL) {
-          int *offset = malloc(sizeof(int));
-          *offset = f->lval_len + 1;
-          map_put(f->lval, t->str, t->len, offset);
+        if (find_lvar(f->lvar, t) == NULL) {
+          lvar_add(f, lvar_new(t));
           f->lval_len++;
           f->arg_len++;
         }
@@ -106,6 +125,7 @@ void program() {
       vec_push(f->code, stmt());
     }
   }
+  funcs = funcs->next;
 }
 
 Node *expression();
@@ -143,10 +163,10 @@ void declarator(Type *type) {
     error_at("expected token", token->str);
   }
 
-  Function *f = funcs->data[funcs->len - 1];
+  Function *f = func;
   int *offset = malloc(sizeof(int));
   *offset = f->lval_len + 1;
-  map_put(f->lval, token->str, token->len, offset);
+  lvar_add(f, lvar_new(token));
   f->lval_len++;
 
   token = token->next;
@@ -412,10 +432,12 @@ Node *primary() {
       return function_call(t);
     }
     Node *node = new_node_ident(t);
-    Function *f = funcs->data[funcs->len - 1];
-    if (map_get(f->lval, t->str, t->len) == NULL) {
+    Function *f = func;
+    LVar *lvar = find_lvar(f->lvar, t);
+    if (lvar == NULL) {
       error_at("'' was not declared in this scope", t->str);
     }
+    node->offset = lvar->offset;
     return node;
   }
 

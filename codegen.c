@@ -17,10 +17,8 @@ void gen_lval(Node *node) {
     exit(1);
   }
   // resolve variable address and push result to stack top
-  int *idx = map_get(f_now->lval, node->name, strlen(node->name));
-  int offset = *idx * 8;
   printf("    mov rax, rbp\n");
-  printf("    sub rax, %d\n", offset);
+  printf("    sub rax, %d\n", node->offset);
   printf("    push rax\n");
 }
 
@@ -212,7 +210,7 @@ void gen_func(Function *f) {
   // prologue
   printf("    push rbp\n");
   printf("    mov rbp, rsp\n");
-  printf("    sub rsp, %d\n", f->lval_len * 8);
+  printf("    sub rsp, %d\n", (f->lvar) ? f->lvar->offset + 8 - 8 : 0);
 
   for (int i = 0; i < f->arg_len; i++) {
     printf("    mov QWORD PTR [rbp-%d], %s\n", (i + 1) * 8, regs[i]);
@@ -236,7 +234,7 @@ void gen_amd64() {
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
 
-  for (int i = 0; i < funcs->len; i++) {
-    gen_func(funcs->data[i]);
+  for (Function *func = funcs; func; func = func->next) {
+    gen_func(func);
   }
 }
