@@ -1,12 +1,26 @@
 #include "9cc.h"
+#include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-char *regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+static char *argregs[] = {"%rdi", "%rsi", "%rdx", "%rcx", "%r8", "%r9"};
+static char *argregs8[] = {"dil", "sil", "dl", "cl", "r8b", "r9b"};
+static char *argregs32[] = {"%edi", "%esi", "%edx", "%ecx", "%r8d", "%r9d"};
 Function *f_now;
 int lcnt = 1;
+
+static char *argreg(int r, int size) {
+  if (size == 1) {
+    return argregs8[r];
+  }
+  if (size == 4) {
+    return argregs32[r];
+  }
+  assert(size == 8);
+  return argregs[r];
+}
 
 /**
  * Generate lvalue code
@@ -17,22 +31,23 @@ void gen_lval(Node *node) {
     exit(1);
   }
   // resolve variable address and push result to stack top
-  printf("    mov rax, rbp\n");
-  printf("    sub rax, %d\n", node->offset);
-  printf("    push rax\n");
+  printf("    movq %%rbp, %%rax\n");
+  printf("    subq $%d, %%rax\n", node->offset);
+  printf("    pushq %%rax\n");
 }
 
 void gen(Node *node) {
   if (node->ty == ND_NUM) {
-    printf("    push %d\n", node->val);
+    printf("    movq $%d, %%rax\n", node->val);
+    printf("    pushq %%rax\n");
     return;
   }
 
   if (node->ty == ND_IDENT) {
     gen_lval(node);
-    printf("    pop rax\n");
-    printf("    mov rax, [rax]\n");
-    printf("    push rax\n");
+    printf("    popq %%rax\n");
+    printf("    movq (%%rax), %%rax\n");
+    printf("    pushq %%rax\n");
     return;
   }
 
@@ -41,18 +56,18 @@ void gen(Node *node) {
       gen(node->args->data[i]);
     }
     for (int i = node->args->len - 1; i >= 0; i--) {
-      printf("    pop %s\n", regs[i]);
+      printf("    popq %s\n", argreg(i, 8));
     }
     printf("    call %s\n", node->name);
-    printf("    push rax\n");
+    printf("    pushq %%rax\n");
     return;
   }
 
   if (node->ty == ND_RET) {
     gen(node->lhs);
-    printf("    pop rax\n");
-    printf("    mov rsp, rbp\n");
-    printf("    pop rbp\n");
+    printf("    popq %%rax\n");
+    printf("    movq %%rbp, %%rsp\n");
+    printf("    popq %%rbp\n");
     printf("    ret\n");
     return;
   }
@@ -60,20 +75,20 @@ void gen(Node *node) {
   if (node->ty == ND_IF) {
     // evaluate conditional expression
     gen(node->cond);
-    printf("    pop rax\n");
-    printf("    cmp rax, 0\n");
+    printf("    popq %%rax\n");
+    printf("    cmpq $0, %%rax\n");
 
     // FIXME?
     // push expression result to stack
     // because all statement pop top of stack at end
-    printf("    push rax\n");
+    printf("    pushq %%rax\n");
 
     if (node->els == NULL) {
       // jump to end of if statement if condition is falth
       printf("    je .Lend%d\n", lcnt);
 
       // pop top of stack pushed previous
-      printf("    pop rax\n");
+      printf("    popq %%rax\n");
       gen(node->then);
     } else {
       printf("    je .Lelse%d\n", lcnt);
@@ -91,19 +106,19 @@ void gen(Node *node) {
     // evaluate conditional expression
     printf(".Lbegin%d:\n", lcnt);
     gen(node->lhs);
-    printf("    pop rax\n");
-    printf("    cmp rax, 0\n");
+    printf("    popq %%rax\n");
+    printf("    cmpq $0, %%rax\n");
 
     // FIXME?
     // push expression result to stack
     // because all statement pop top of stack at end
-    printf("    push rax\n");
+    printf("    pushq %%rax\n");
 
     // jump to end of if statement if condition is falth
     printf("    je .Lend%d\n", lcnt);
 
     // pop top of stack pushed previous
-    printf("    pop rax\n");
+    printf("    popq %%rax\n");
     gen(node->rhs);
     printf("    jmp .Lbegin%d\n", lcnt);
     printf(".Lend%d:\n", lcnt);
@@ -128,10 +143,10 @@ void gen(Node *node) {
 
     gen(node->rhs);
 
-    printf("    pop rdi\n");
-    printf("    pop rax\n");
-    printf("    mov [rax], rdi\n");
-    printf("    push rdi\n");
+    printf("    popq %%rdi\n");
+    printf("    popq %%rax\n");
+    printf("    movq %%rdi, (%%rax)\n");
+    printf("    pushq %%rdi\n");
     return;
   }
 
@@ -142,65 +157,65 @@ void gen(Node *node) {
 
   if (node->ty == ND_DEREF) {
     gen(node->lhs);
-    printf("    pop rax\n");
-    printf("    mov rax, [rax]\n");
-    printf("    push rax\n");
+    printf("    popq %%rax\n");
+    printf("    movq (%%rax), %%rax\n");
+    printf("    pushq %%rax\n");
     return;
   }
 
   gen(node->lhs);
   gen(node->rhs);
 
-  printf("    pop rdi\n");
-  printf("    pop rax\n");
+  printf("    popq %%rdi\n");
+  printf("    popq %%rax\n");
   switch (node->ty) {
   case '+':
-    printf("    add rax, rdi\n");
+    printf("    addq %%rdi, %%rax\n");
     break;
   case '-':
-    printf("    sub rax, rdi\n");
+    printf("    subq %%rdi, %%rax\n");
     break;
   case '*':
-    printf("    mul rdi\n");
+    printf("    mulq %%rdi\n");
     break;
   case '/':
     // Clear rdx because of rdx:rax is dividend
-    printf("    mov rdx, 0\n");
-    printf("    div rdi\n");
+    printf("    movq $0, %%rdx\n");
+    printf("    divq %%rdi\n");
     break;
   case ND_EQ:
-    printf("    cmp rax, rdi\n");
-    printf("    sete al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    sete %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   case ND_NE:
-    printf("    cmp rax, rdi\n");
-    printf("    setne al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    setne %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   case '<':
-    printf("    cmp rax, rdi\n");
-    printf("    setl al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    setl %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   case '>':
-    printf("    cmp rax, rdi\n");
-    printf("    setg al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    setg %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   case ND_LE:
-    printf("    cmp rax, rdi\n");
-    printf("    setle al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    setle %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   case ND_GE:
-    printf("    cmp rax, rdi\n");
-    printf("    setge al\n");
-    printf("    movzb rax, al\n");
+    printf("    cmpq %%rdi, %%rax\n");
+    printf("    setge %%al\n");
+    printf("    movzbq %%al, %%rax\n");
     break;
   }
 
-  printf("    push rax\n");
+  printf("    pushq %%rax\n");
 }
 
 void gen_func(Function *f) {
@@ -208,30 +223,29 @@ void gen_func(Function *f) {
   printf("%s:\n", f->name);
 
   // prologue
-  printf("    push rbp\n");
-  printf("    mov rbp, rsp\n");
-  printf("    sub rsp, %d\n", (f->lvar) ? f->lvar->offset + 8 - 8 : 0);
+  printf("    pushq %%rbp\n");
+  printf("    movq %%rsp, %%rbp\n");
+  printf("    subq $%d, %%rsp\n", (f->lvar) ? f->lvar->offset + 8 - 8 : 0);
 
   for (int i = 0; i < f->arg_len; i++) {
-    printf("    mov QWORD PTR [rbp-%d], %s\n", (i + 1) * 8, regs[i]);
+    printf("    movq %s, -%d(%%rbp)\n", argreg(i, 8), (i + 1) * 8);
   }
 
   for (int i = 0; i < f->code->len; i++) {
     if (f->code->data[i] != NULL) {
       gen(f->code->data[i]);
 
-      printf("    pop rax\n");
+      printf("    popq %%rax\n");
     }
   }
 
   // epilogue
-  printf("    mov rsp, rbp\n");
-  printf("    pop rbp\n");
+  printf("    movq %%rbp, %%rsp\n");
+  printf("    popq %%rbp\n");
   printf("    ret\n");
 }
 
 void gen_amd64() {
-  printf(".intel_syntax noprefix\n");
   printf(".global main\n");
 
   for (Function *func = funcs; func; func = func->next) {

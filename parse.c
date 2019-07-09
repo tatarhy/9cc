@@ -164,8 +164,6 @@ void declarator(Type *type) {
   }
 
   Function *f = func;
-  int *offset = malloc(sizeof(int));
-  *offset = f->lval_len + 1;
   lvar_add(f, lvar_new(token));
   f->lval_len++;
 
