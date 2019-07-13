@@ -6,6 +6,12 @@
 
 static Token *token;
 
+Type *new_type(TypeKind kind) {
+  Type *type = malloc(sizeof(Type));
+  type->kind = kind;
+  return type;
+}
+
 Node *new_node(int ty, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
   node->ty = ty;
@@ -40,20 +46,27 @@ Node *new_node_num(int val) {
   return node;
 }
 
-static LVar *lvar_new(Token *tok) {
+static LVar *lvar_new(Token *tok, Type *type) {
   LVar *lvar = malloc(sizeof(LVar));
   lvar->name = tok->str;
   lvar->len = tok->len;
+  lvar->type = type;
   return lvar;
 }
 
 static void lvar_add(Function *func, LVar *new) {
+  int size;
+  if (new->type->kind == TY_INT)
+    size = 4;
+  else
+    size = 8;
+
   if (func->lvar == NULL) {
-    new->offset = 8;
+    new->offset = size;
     func->lvar = new;
     return;
   }
-  new->offset = func->lvar->offset + 8;
+  new->offset = func->lvar->offset + size;
   new->next = func->lvar;
   func->lvar = new;
 }
@@ -106,7 +119,8 @@ void program() {
         consume(TK_INT);
         t = token;
         if (find_lvar(f->lvar, t) == NULL) {
-          lvar_add(f, lvar_new(t));
+          Type *type = new_type(TY_INT);
+          lvar_add(f, lvar_new(t, type));
           f->lval_len++;
           f->arg_len++;
         }
@@ -140,9 +154,7 @@ Node *expression();
  */
 Type *decl_specifiers() {
   if (consume(TK_INT)) {
-    Type *type = malloc(sizeof(Type));
-    type->ty = INT;
-    return type;
+    return new_type(TY_INT);
   }
   error_at("expected int", token->str);
 }
@@ -151,11 +163,12 @@ Type *decl_specifiers() {
  * declarator:
  *     pointer_opt direct-declarator
  */
-void declarator(Type *type) {
+void declarator(Type *to) {
+  Type *type = to;
   while (consume('*')) {
-    Type *type = malloc(sizeof(Type));
-    type->ty = PTR;
-    type->ptrto = type;
+    type = new_type(TY_PTR);
+    type->ptrto = to;
+    to = type;
   }
 
   // identifier
@@ -164,7 +177,7 @@ void declarator(Type *type) {
   }
 
   Function *f = func;
-  lvar_add(f, lvar_new(token));
+  lvar_add(f, lvar_new(token, type));
   f->lval_len++;
 
   token = token->next;
@@ -435,7 +448,7 @@ Node *primary() {
     if (lvar == NULL) {
       error_at("'' was not declared in this scope", t->str);
     }
-    node->offset = lvar->offset;
+    node->lvar = lvar;
     return node;
   }
 

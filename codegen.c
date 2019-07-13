@@ -32,7 +32,7 @@ void gen_lval(Node *node) {
   }
   // resolve variable address and push result to stack top
   printf("    movq %%rbp, %%rax\n");
-  printf("    subq $%d, %%rax\n", node->offset);
+  printf("    subq $%d, %%rax\n", node->lvar->offset);
   printf("    pushq %%rax\n");
 }
 
@@ -145,7 +145,12 @@ void gen(Node *node) {
 
     printf("    popq %%rdi\n");
     printf("    popq %%rax\n");
-    printf("    movq %%rdi, (%%rax)\n");
+
+    if (node->lhs->lvar->type->kind == TY_INT)
+      printf("    movl %%edi, (%%rax)\n");
+    else
+      printf("    movq %%rdi, (%%rax)\n");
+
     printf("    pushq %%rdi\n");
     return;
   }
@@ -158,7 +163,7 @@ void gen(Node *node) {
   if (node->ty == ND_DEREF) {
     gen(node->lhs);
     printf("    popq %%rax\n");
-    printf("    movq (%%rax), %%rax\n");
+    printf("    movl (%%rax), %%eax\n");
     printf("    pushq %%rax\n");
     return;
   }
@@ -184,32 +189,32 @@ void gen(Node *node) {
     printf("    divq %%rdi\n");
     break;
   case ND_EQ:
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    sete %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
   case ND_NE:
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    setne %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
   case '<':
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    setl %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
   case '>':
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    setg %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
   case ND_LE:
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    setle %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
   case ND_GE:
-    printf("    cmpq %%rdi, %%rax\n");
+    printf("    cmpl %%edi, %%eax\n");
     printf("    setge %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
@@ -225,10 +230,10 @@ void gen_func(Function *f) {
   // prologue
   printf("    pushq %%rbp\n");
   printf("    movq %%rsp, %%rbp\n");
-  printf("    subq $%d, %%rsp\n", (f->lvar) ? f->lvar->offset + 8 - 8 : 0);
+  printf("    subq $%d, %%rsp\n", (f->lvar) ? f->lvar->offset : 0);
 
   for (int i = 0; i < f->arg_len; i++) {
-    printf("    movq %s, -%d(%%rbp)\n", argreg(i, 8), (i + 1) * 8);
+    printf("    movl %s, -%d(%%rbp)\n", argreg(i, 4), (i + 1) * 4);
   }
 
   for (int i = 0; i < f->code->len; i++) {

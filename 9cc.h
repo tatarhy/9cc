@@ -48,6 +48,26 @@ typedef struct {
   Vector *vals;
 } Map;
 
+typedef enum {
+  TY_INT,
+  TY_PTR,
+} TypeKind;
+
+typedef struct Type Type;
+
+typedef struct Type {
+  TypeKind kind;
+  Type *ptrto;
+} Type;
+
+typedef struct LVar {
+    struct LVar *next;
+    char *name;
+    int len;
+    int offset;
+    Type *type;
+} LVar;
+
 typedef struct Node {
   int ty;
   struct Node *lhs;
@@ -62,22 +82,10 @@ typedef struct Node {
 
   int val;
   char *name;
-  int offset;
+  LVar *lvar;
   Vector *args;
   Vector *stmts;
 } Node;
-
-typedef struct Type {
-  enum {INT, PTR} ty;
-  struct Type *ptrto;
-} Type;
-
-typedef struct LVar {
-    struct LVar *next;
-    char *name;
-    int len;
-    int offset;
-} LVar;
 
 typedef struct Function {
   struct Function *next;
