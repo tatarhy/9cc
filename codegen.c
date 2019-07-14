@@ -26,7 +26,7 @@ static char *argreg(int r, int size) {
  * Generate lvalue code
  */
 void gen_lval(Node *node) {
-  if (node->ty != ND_IDENT) {
+  if (node->kind != ND_IDENT) {
     fprintf(stderr, "lvalue is not variable\n");
     exit(1);
   }
@@ -37,13 +37,13 @@ void gen_lval(Node *node) {
 }
 
 void gen(Node *node) {
-  if (node->ty == ND_NUM) {
+  if (node->kind == ND_NUM) {
     printf("    movq $%d, %%rax\n", node->val);
     printf("    pushq %%rax\n");
     return;
   }
 
-  if (node->ty == ND_IDENT) {
+  if (node->kind == ND_IDENT) {
     gen_lval(node);
     printf("    popq %%rax\n");
     printf("    movq (%%rax), %%rax\n");
@@ -51,7 +51,7 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_CALL) {
+  if (node->kind == ND_CALL) {
     for (int i = 0; i < node->args->len; i++) {
       gen(node->args->data[i]);
     }
@@ -63,7 +63,7 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_RET) {
+  if (node->kind == ND_RET) {
     gen(node->lhs);
     printf("    popq %%rax\n");
     printf("    movq %%rbp, %%rsp\n");
@@ -72,7 +72,7 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_IF) {
+  if (node->kind == ND_IF) {
     // evaluate conditional expression
     gen(node->cond);
     printf("    popq %%rax\n");
@@ -102,7 +102,7 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_WHILE) {
+  if (node->kind == ND_WHILE) {
     // evaluate conditional expression
     printf(".Lbegin%d:\n", lcnt);
     gen(node->lhs);
@@ -126,7 +126,7 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_BLOCK) {
+  if (node->kind == ND_BLOCK) {
     Vector *stmts = node->stmts;
     for (int i = 0; i < stmts->len; i++) {
       gen(stmts->data[i]);
@@ -134,8 +134,8 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == '=') {
-    if (node->lhs->ty == ND_DEREF) {
+  if (node->kind == ND_ASSIGN) {
+    if (node->lhs->kind == ND_DEREF) {
       gen(node->lhs);
     } else {
       gen_lval(node->lhs);
@@ -155,12 +155,12 @@ void gen(Node *node) {
     return;
   }
 
-  if (node->ty == ND_ADDR) {
+  if (node->kind == ND_ADDR) {
     gen_lval(node->lhs);
     return;
   }
 
-  if (node->ty == ND_DEREF) {
+  if (node->kind == ND_DEREF) {
     gen(node->lhs);
     printf("    popq %%rax\n");
     printf("    movl (%%rax), %%eax\n");
@@ -173,17 +173,17 @@ void gen(Node *node) {
 
   printf("    popq %%rdi\n");
   printf("    popq %%rax\n");
-  switch (node->ty) {
-  case '+':
+  switch (node->kind) {
+  case ND_ADD:
     printf("    addq %%rdi, %%rax\n");
     break;
-  case '-':
+  case ND_SUB:
     printf("    subq %%rdi, %%rax\n");
     break;
-  case '*':
+  case ND_MUL:
     printf("    mulq %%rdi\n");
     break;
-  case '/':
+  case ND_DIV:
     // Clear rdx because of rdx:rax is dividend
     printf("    movq $0, %%rdx\n");
     printf("    divq %%rdi\n");
@@ -198,12 +198,12 @@ void gen(Node *node) {
     printf("    setne %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
-  case '<':
+  case ND_LT:
     printf("    cmpl %%edi, %%eax\n");
     printf("    setl %%al\n");
     printf("    movzbq %%al, %%rax\n");
     break;
-  case '>':
+  case ND_GT:
     printf("    cmpl %%edi, %%eax\n");
     printf("    setg %%al\n");
     printf("    movzbq %%al, %%rax\n");

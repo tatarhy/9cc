@@ -21,22 +21,6 @@ typedef struct Token {
   int len;
 } Token;
 
-enum {
-  ND_NUM = 256,
-  ND_IDENT,
-  ND_EQ,
-  ND_NE,
-  ND_LE,
-  ND_GE,
-  ND_IF,
-  ND_WHILE,
-  ND_RET,
-  ND_BLOCK,
-  ND_CALL,
-  ND_ADDR,
-  ND_DEREF,
-};
-
 typedef struct {
   void **data;
   int capacity;
@@ -68,8 +52,31 @@ typedef struct LVar {
     Type *type;
 } LVar;
 
+typedef enum {
+  ND_ADD, // +
+  ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_LT, // <
+  ND_GT, // >
+  ND_EQ, // ==
+  ND_NE, // !=
+  ND_LE, // <=
+  ND_GE, // >=
+  ND_ASSIGN, // =
+  ND_NUM,
+  ND_IDENT,
+  ND_IF,
+  ND_WHILE,
+  ND_RET,
+  ND_BLOCK,
+  ND_CALL,
+  ND_ADDR,
+  ND_DEREF,
+} NodeKind;
+
 typedef struct Node {
-  int ty;
+  NodeKind kind;
   struct Node *lhs;
   struct Node *rhs;
 

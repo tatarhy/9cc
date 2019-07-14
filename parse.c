@@ -12,9 +12,9 @@ Type *new_type(TypeKind kind) {
   return type;
 }
 
-Node *new_node(int ty, Node *lhs, Node *rhs) {
+Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = malloc(sizeof(Node));
-  node->ty = ty;
+  node->kind = kind;
   node->lhs = lhs;
   node->rhs = rhs;
   return node;
@@ -22,7 +22,7 @@ Node *new_node(int ty, Node *lhs, Node *rhs) {
 
 Node *new_node_ident(Token *t) {
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_IDENT;
+  node->kind = ND_IDENT;
   char *name = malloc((t->len + 1) * sizeof(char));
   strncpy(name, t->str, t->len);
   name[t->len] = '\0';
@@ -32,7 +32,7 @@ Node *new_node_ident(Token *t) {
 
 Node *new_node_if(Node *cond, Node *then, Node *els) {
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_IF;
+  node->kind = ND_IF;
   node->cond = cond;
   node->then = then;
   node->els = els;
@@ -41,7 +41,7 @@ Node *new_node_if(Node *cond, Node *then, Node *els) {
 
 Node *new_node_num(int val) {
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_NUM;
+  node->kind = ND_NUM;
   node->val = val;
   return node;
 }
@@ -243,7 +243,7 @@ static Node *compound_stmt() {
     vec_push(stmts, stmt());
   }
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_BLOCK;
+  node->kind = ND_BLOCK;
   node->stmts = stmts;
   return node;
 }
@@ -251,7 +251,7 @@ static Node *compound_stmt() {
 static Node *return_stmt() {
   consume(TK_RET);
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_RET;
+  node->kind = ND_RET;
   node->lhs = expression();
   if (!consume(';')) {
     error_at("expected ';'", token->str);
@@ -328,7 +328,7 @@ Node *expression() {
 Node *assign() {
   Node *node = equality();
   if (consume('=')) {
-    node = new_node('=', node, assign());
+    node = new_node(ND_ASSIGN, node, assign());
   }
   return node;
 }
@@ -347,11 +347,11 @@ Node *relational() {
   Node *node = add();
   while (1) {
     if (consume('<')) {
-      node = new_node('<', node, add());
+      node = new_node(ND_LT, node, add());
       continue;
     }
     if (consume('>')) {
-      node = new_node('>', node, add());
+      node = new_node(ND_GT, node, add());
       continue;
     }
     if (consume(TK_LE)) {
@@ -397,7 +397,7 @@ Node *equality() {
 
 Node *function_call(Token *t) {
   Node *node = malloc(sizeof(Node));
-  node->ty = ND_CALL;
+  node->kind = ND_CALL;
   char *name = malloc((t->len + 1) * sizeof(char));
   strncpy(name, t->str, t->len);
   name[t->len] = '\0';
@@ -476,7 +476,7 @@ Node *unary() {
     return primary();
   }
   if (consume('-')) {
-    return new_node('-', new_node_num(0), primary());
+    return new_node(ND_SUB, new_node_num(0), primary());
   }
   if (consume('&')) {
     return new_node(ND_ADDR, primary(), NULL);
@@ -498,9 +498,9 @@ Node *mul() {
   Node *node = unary();
   while (1) {
     if (consume('*')) {
-      node = new_node('*', node, unary());
+      node = new_node(ND_MUL, node, unary());
     } else if (consume('/')) {
-      node = new_node('/', node, unary());
+      node = new_node(ND_DIV, node, unary());
     } else {
       return node;
     }
@@ -515,9 +515,9 @@ Node *add() {
   Node *node = mul();
   while (1) {
     if (consume('+')) {
-      node = new_node('+', node, mul());
+      node = new_node(ND_ADD, node, mul());
     } else if (consume('-')) {
-      node = new_node('-', node, mul());
+      node = new_node(ND_SUB, node, mul());
     } else {
       return node;
     }
